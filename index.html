@@ -1049,7 +1049,10 @@ function loadDashboard(){
     const guests = [...new Set(photos.map(p => p.guest_name).filter(Boolean))].length;
     const dateFmt = ev.date ? fmtDate(ev.date) : '';
     return `<div class="ev-card" onclick='openEvent(${JSON.stringify(ev)})'>
-      <div class="ev-card-cover">${ev.emoji||'🎊'}</div>
+      <div class="ev-card-cover" style="position:relative">
+        <span style="position:relative;z-index:1">${ev.emoji||'🎊'}</span>
+        ${photos.length > 0 ? `<div class="ev-photo-count">📸 ${photos.length}</div>` : ''}
+      </div>
       <div class="ev-card-body">
         <div class="ev-card-type">${(TYPE_LABELS[ev.type]||'Event').toUpperCase()}</div>
         <div class="ev-card-name">${esc(ev.name)}</div>
@@ -1216,7 +1219,9 @@ function guestUrl(slug){ return location.href.split('?')[0] + '?event=' + slug; 
 
 function copyGuestLink(){
   const link = document.getElementById('guest-link-display')?.textContent || '';
-  navigator.clipboard.writeText(link).then(() => toast('Guest link copied to clipboard! 📋'));
+  navigator.clipboard.writeText(link).then(() => {
+    toast('Link copied! 📋', 'success');
+  });
 }
 
 function shareInvite(){
