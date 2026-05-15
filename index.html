@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 /* ── RESET & TOKENS ── */
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -417,6 +418,26 @@ em.serif{font-style:italic;color:var(--gold);}
 .lb-download{position:absolute;bottom:1.5rem;right:1.5rem;background:var(--gold);color:var(--white);border:none;padding:.6rem 1.35rem;border-radius:100px;font-family:var(--font-body);font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--transition);}
 .lb-download:hover{background:var(--gold-dark);}
 
+
+/* EV MENU */
+.ev-menu{position:relative;display:inline-block;}
+.ev-menu-dd{position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);min-width:180px;z-index:100;display:none;overflow:hidden;}
+.ev-menu-dd.open{display:block;}
+.ev-menu-item{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;font-size:.83rem;color:var(--ink);cursor:pointer;transition:var(--transition);background:none;border:none;width:100%;text-align:left;font-family:var(--font-body);}
+.ev-menu-item:hover{background:var(--cream);}
+.ev-menu-item.danger{color:var(--error);}
+.ev-menu-item.danger:hover{background:#FDF2F2;}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem;}
+.share-option{border:1.5px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;cursor:pointer;transition:var(--transition);}
+.share-option:hover{border-color:var(--gold);background:rgba(184,149,90,.04);}
+.share-option-icon{font-size:1.6rem;margin-bottom:.4rem;}
+.share-option-label{font-size:.78rem;font-weight:600;color:var(--ink);}
+.share-option-sub{font-size:.68rem;color:var(--ink-muted);margin-top:.1rem;}
+.modal-sm{max-width:420px;}
+@keyframes newFlash{0%{box-shadow:0 0 0 0 rgba(184,149,90,.5);}70%{box-shadow:0 0 0 10px rgba(184,149,90,0);}100%{box-shadow:0 0 0 0 rgba(184,149,90,0);}}
+.photo-item.new-photo{animation:newFlash .9s ease;}
+.copy-success{color:var(--success)!important;border-color:var(--success)!important;}
+.ev-photo-count{position:absolute;top:10px;right:10px;background:rgba(15,15,14,.6);color:var(--white);border-radius:100px;padding:.2rem .6rem;font-size:.68rem;font-weight:600;backdrop-filter:blur(4px);}
 /* RESPONSIVE */
 @media(max-width:960px){
 .hero{grid-template-columns:1fr;padding:6rem 1.5rem 4rem;gap:3rem;}
@@ -462,6 +483,37 @@ section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-s
   <button class="lb-download" onclick="dlCurrentPhoto()">⬇ Download</button>
 </div>
 
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="modal-share">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="closeModal('modal-share')">&times;</button>
+    <div class="modal-title">Share Event</div>
+    <div class="modal-sub" id="share-ev-name">Invite guests to your event</div>
+    <div class="share-grid">
+      <div class="share-option" onclick="shareCopy()"><div class="share-option-icon">&#128279;</div><div class="share-option-label">Copy Link</div><div class="share-option-sub">Share anywhere</div></div>
+      <div class="share-option" onclick="shareNative()"><div class="share-option-icon">&#128228;</div><div class="share-option-label">Share</div><div class="share-option-sub">Via your apps</div></div>
+      <div class="share-option" onclick="shareWA()"><div class="share-option-icon">&#128172;</div><div class="share-option-label">WhatsApp</div><div class="share-option-sub">Send message</div></div>
+      <div class="share-option" onclick="shareEmail()"><div class="share-option-icon">&#128231;</div><div class="share-option-label">Email</div><div class="share-option-sub">Send invite</div></div>
+    </div>
+    <div style="background:var(--cream);border-radius:var(--radius-md);padding:.85rem 1rem;font-size:.78rem;font-family:monospace;color:var(--ink-muted);word-break:break-all;border:1px solid var(--border);" id="share-link-display">-</div>
+  </div>
+</div>
+<!-- EDIT EVENT MODAL -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="closeModal('modal-edit')">&times;</button>
+    <div class="modal-title">Edit Event</div>
+    <div class="alert alert-error" id="edit-error"></div>
+    <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Event Name</label><input class="form-input" id="edit-name" type="text"></div>
+    <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Location</label><input class="form-input" id="edit-loc" type="text"></div>
+    <div class="form-field" style="margin-bottom:1.25rem"><label class="form-label">Date</label><input class="form-input" id="edit-date" type="date"></div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-gold btn-xl" onclick="saveEdit()" style="flex:1">Save Changes</button>
+      <button class="btn btn-xl" style="background:rgba(192,57,43,.08);color:var(--error);border:1.5px solid rgba(192,57,43,.2);border-radius:100px;padding:.9rem 1.25rem;cursor:pointer;font-family:var(--font-body);font-weight:500;" onclick="deleteEvent()">Delete</button>
+    </div>
+  </div>
+</div>
 <!-- ═══ AUTH MODAL ═══ -->
 <div class="modal-overlay" id="modal-auth">
   <div class="modal">
@@ -766,6 +818,15 @@ section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-s
         <div class="badge badge-live"><div class="badge-dot"></div> Live</div>
         <button class="btn btn-outline btn-md" onclick="shareInvite()">📤 Share Invite</button>
         <button class="btn btn-gold btn-md" onclick="openModal('modal-create')">+ New Event</button>
+        <div class="ev-menu" id="ev-menu">
+          <button class="btn btn-ghost btn-md" onclick="toggleEvMenu(event)">&#8943; Manage</button>
+          <div class="ev-menu-dd" id="ev-menu-dd">
+            <button class="ev-menu-item" onclick="openEditEvent()">&#9998; Edit Event</button>
+            <button class="ev-menu-item" onclick="openShareModal()">&#128228; Share Invite</button>
+            <button class="ev-menu-item" onclick="downloadQR()">&#8679; Download QR</button>
+            <button class="ev-menu-item danger" onclick="deleteEvent()">&#128465; Delete Event</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="ev-stats-row">
@@ -1149,7 +1210,9 @@ async function uploadFiles(files, isGuest){
     if (file.size > 20*1024*1024){ toast('File too large (max 20MB)', 'error'); continue; }
     txt.textContent = `Uploading ${file.name}… (${done+1}/${files.length})`;
     try {
-      const url = await readAsDataURL(file);
+      let pFile=file;
+      if(file.size>400*1024&&typeof compressImage==="function"){try{pFile=await compressImage(file);}catch(ce){}}
+      const url=await readAsDataURL(pFile);
       const photo = { id:'p_'+randStr(), event_slug:slug, guest_name:guestName, url, filename:file.name, created_at:new Date().toISOString() };
       DB.addPhoto(slug, photo);
       done++;
@@ -1241,13 +1304,7 @@ function dlPhoto(url, id){
   const a = document.createElement('a');
   a.href = url; a.download = 'lumiere-photo-'+(id||Date.now())+'.jpg'; a.click();
 }
-function downloadAll(){
-  if (!currentEvent) return;
-  const photos = DB.getPhotos(currentEvent.slug);
-  if (!photos.length){ toast('No photos to download yet.'); return; }
-  toast(`Preparing ${photos.length} photos…`);
-  photos.forEach((p,i) => setTimeout(()=>dlPhoto(p.url,p.id), i*300));
-}
+// downloadAll defined below (with ZIP support)
 
 // ══════════════════════════════════════════════
 // POLLING (simulates realtime)
@@ -1381,6 +1438,102 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=>ls.style.display='none',420);
   },1400);
 });
+
+// ============ ADDITIONAL FEATURES ============
+
+// ZIP download
+async function downloadAll(){
+  if(!currentEvent)return;
+  const photos=DB.getPhotos(currentEvent.slug);
+  if(!photos.length){toast("No photos to download yet.");return;}
+  if(window.JSZip&&photos.length>1){
+    toast("Creating ZIP of "+photos.length+" photos...");
+    try{
+      const zip=new JSZip();
+      const folder=zip.folder(currentEvent.name.replace(/[^a-z0-9]/gi,"_"));
+      let i=0;
+      for(const p of photos){
+        const res=await fetch(p.url);
+        const blob=await res.blob();
+        const ext=blob.type.includes("png")?"png":"jpg";
+        const nm=(p.guest_name||"photo").replace(/[^a-z0-9]/gi,"_");
+        folder.file(nm+"_"+(++i)+"."+ext,blob);
+      }
+      const content=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(content);
+      a.download="lumiere-"+currentEvent.name.replace(/[^a-z0-9]/gi,"_")+".zip";
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      toast("ZIP downloaded!","success");return;
+    }catch(e){console.warn("ZIP failed:",e);}
+  }
+  toast("Downloading "+photos.length+" photos...");
+  photos.forEach((p,i)=>setTimeout(()=>dlPhoto(p.url,p.id),i*300));
+}
+
+// Image compression
+async function compressImage(file,maxWH=1920,quality=0.88){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxWH||h>maxWH){if(w>h){h=Math.round(h*(maxWH/w));w=maxWH;}else{w=Math.round(w*(maxWH/h));h=maxWH;}}
+      const c=document.createElement("canvas");
+      c.width=w;c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      c.toBlob(blob=>resolve(blob?new File([blob],file.name,{type:"image/jpeg"}):file),"image/jpeg",quality);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(file);};
+    img.src=url;
+  });
+}
+
+// Share functions
+function openShareModal(){
+  closeEvMenu();
+  if(!currentEvent)return;
+  const url=guestUrl(currentEvent.slug);
+  document.getElementById("share-ev-name").textContent=currentEvent.name;
+  document.getElementById("share-link-display").textContent=url;
+  openModal("modal-share");
+}
+function shareCopy(){const l=document.getElementById("share-link-display").textContent;navigator.clipboard.writeText(l).then(()=>{toast("Link copied!","success");closeModal("modal-share");});}
+function shareNative(){if(!currentEvent)return;const u=guestUrl(currentEvent.slug);if(navigator.share){navigator.share({title:currentEvent.name,text:"Join my event gallery on Lumiere!",url:u});closeModal("modal-share");}else shareCopy();}
+function shareWA(){if(!currentEvent)return;const u=guestUrl(currentEvent.slug);const m=encodeURIComponent("Join \""+currentEvent.name+"\" on Lumiere!\n"+u);window.open("https://wa.me/?text="+m,"_blank");closeModal("modal-share");}
+function shareEmail(){if(!currentEvent)return;const u=guestUrl(currentEvent.slug);const s=encodeURIComponent("Join our photo gallery: "+currentEvent.name);const b=encodeURIComponent("Hi!\n\nJoin our shared photo gallery.\n\nLink: "+u+"\n\nNo app needed!");window.open("mailto:?subject="+s+"&body="+b,"_blank");closeModal("modal-share");}
+
+// Event menu
+function toggleEvMenu(e){e.stopPropagation();document.getElementById("ev-menu-dd").classList.toggle("open");}
+function closeEvMenu(){document.getElementById("ev-menu-dd")?.classList.remove("open");}
+document.addEventListener("click",()=>closeEvMenu());
+
+// Edit event
+function openEditEvent(){closeEvMenu();if(!currentEvent)return;document.getElementById("edit-name").value=currentEvent.name;document.getElementById("edit-loc").value=currentEvent.location||"";document.getElementById("edit-date").value=currentEvent.date||"";document.getElementById("edit-error").classList.remove("show");openModal("modal-edit");}
+function saveEdit(){
+  const name=document.getElementById("edit-name").value.trim();
+  if(!name){showAlert("edit-error","Event name is required.");return;}
+  currentEvent.name=name;currentEvent.location=document.getElementById("edit-loc").value.trim();currentEvent.date=document.getElementById("edit-date").value;
+  DB.saveEvent(currentEvent);
+  document.getElementById("ev-title").textContent=currentEvent.name;
+  const d=currentEvent.date?fmtDate(currentEvent.date,true):"";
+  document.getElementById("ev-meta").textContent=[d,currentEvent.location].filter(Boolean).join(" - ");
+  document.getElementById("stat-date").textContent=currentEvent.date?fmtDate(currentEvent.date):"--";
+  closeModal("modal-edit");toast("Event updated!","success");
+}
+function deleteEvent(){
+  if(!currentEvent)return;
+  if(!confirm("Delete \""+currentEvent.name+"\" and all its photos? This cannot be undone."))return;
+  DB.setAllEvents(DB.getAllEvents().filter(e=>e.slug!==currentEvent.slug));
+  try{localStorage.removeItem("lm_ph_"+currentEvent.slug);}catch{}
+  closeModal("modal-edit");currentEvent=null;stopPoll();showPage("dashboard");toast("Event deleted");
+}
+
+// Override shareInvite
+function shareInvite(){openShareModal();}
+
 </script>
 </body>
 </html>
