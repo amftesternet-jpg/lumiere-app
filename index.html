@@ -1540,11 +1540,11 @@ function shareInvite(){openShareModal();}
 // SUPABASE CONFIGURATION
 // Paste your values from: supabase.com → Project → Settings → API
 // ════════════════════════════════════════════════════════════
-const SUPA_URL = 'SUPABASE_URL_HERE';   // e.g. https://abcxyz.supabase.co
-const SUPA_KEY = 'SUPABASE_ANON_KEY_HERE'; // eyJhbGci...
+const SUPA_URL = 'https://zgsdfaazwuphuigvmupw.supabase.co';   // e.g. https://abcxyz.supabase.co
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnc2RmYWF6d3VwaHVpZ3ZtdXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTI0NDcsImV4cCI6MjA5NDQ4ODQ0N30.cOV8OvnLSMcofn_jlgmWJDL_bjgzE_OC5TGvOmgSkWI'; // eyJhbGci...
 
 // Auto-detect: demo mode if not configured
-const SUPA_READY = !SUPA_URL.includes('HERE') && !SUPA_KEY.includes('HERE');
+const SUPA_READY = true; // Supabase configured
 let _sb = null;
 if (SUPA_READY) {
   _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
