@@ -515,6 +515,45 @@ section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-s
     </div>
   </div>
 </div>
+
+<!-- ═══ UPGRADE MODAL ═══ -->
+<div class="modal-backdrop" id="modal-upgrade" style="position:fixed;inset:0;background:rgba(15,15,14,.6);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:24px;width:min(500px,100%);padding:2.25rem;position:relative;animation:mIn .22s ease;max-height:90vh;overflow-y:auto;">
+    <button onclick="closeModal('modal-upgrade')" style="position:absolute;top:1.2rem;right:1.2rem;width:30px;height:30px;border-radius:50%;background:#f0ebe1;border:none;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;color:#6b6660;">✕</button>
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.65rem;color:#0f0f0e;margin-bottom:.35rem;">Upgrade Event</div>
+    <div style="font-size:.85rem;color:#6b6660;margin-bottom:1.4rem;line-height:1.5;">Remove limits and unlock all features for this event</div>
+    <!-- Tier selector -->
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem;" id="tier-cards">
+      <div id="tc-pro" onclick="selectUpgradeTier('pro')" style="border:2px solid #b8955a;background:rgba(184,149,90,.04);border-radius:18px;padding:1.1rem 1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:.2s;">
+        <div>
+          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.1rem;color:#0f0f0e;margin-bottom:.2rem;">Pro</div>
+          <div style="font-size:.75rem;color:#6b6660;">Unlimited guests &amp; photos · Bulk ZIP download</div>
+        </div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;color:#8b6b35;white-space:nowrap;">€29</div>
+      </div>
+      <div id="tc-elite" onclick="selectUpgradeTier('elite')" style="border:1.5px solid #e5ddd0;border-radius:18px;padding:1.1rem 1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:.2s;">
+        <div>
+          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.1rem;color:#0f0f0e;margin-bottom:.2rem;">Elite</div>
+          <div style="font-size:.75rem;color:#6b6660;">Pro + email invitations + custom branding</div>
+        </div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;color:#8b6b35;white-space:nowrap;">€79</div>
+      </div>
+    </div>
+    <!-- What you get -->
+    <div style="background:#faf7f2;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:.82rem;color:#6b6660;line-height:1.7;">
+      <strong style="color:#0f0f0e;display:block;margin-bottom:.4rem;">Free plan limits</strong>
+      30 guests max · 100 photos max<br>
+      Upgrade removes all limits instantly after payment.
+    </div>
+    <div style="background:#f2faf5;border:1px solid #a8d5ba;border-radius:10px;padding:.7rem 1rem;font-size:.8rem;color:#235c3a;margin-bottom:1.25rem;">
+      🔒 Secure checkout via Stripe · Test mode active
+    </div>
+    <button id="btn-upgrade-pay" onclick="doStripeCheckout()" style="background:#b8955a;color:#fff;border:none;padding:.9rem;border-radius:100px;font-family:inherit;font-size:.97rem;font-weight:600;cursor:pointer;width:100%;transition:.2s;">
+      Continue to Payment →
+    </button>
+  </div>
+</div>
+
 <!-- ═══ AUTH MODAL ═══ -->
 <div class="modal-overlay" id="modal-auth">
   <div class="modal">
@@ -1433,6 +1472,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const saved = DB.getUser();
   if (saved){ currentUser=saved; updateNavUser(saved); }
   checkRoute();
+  handleStripeReturn();
   setTimeout(()=>{
     const ls=document.getElementById('loading-screen');
     ls.style.opacity='0';
@@ -1535,6 +1575,15 @@ function deleteEvent(){
 // Override shareInvite
 function shareInvite(){openShareModal();}
 
+
+
+// ════════════════════════════════════════════════════════════
+// STRIPE CONFIG — filled in automatically when keys are set
+// ════════════════════════════════════════════════════════════
+const STRIPE_CHECKOUT_FN = SUPA_URL + '/functions/v1/create-checkout';
+const STRIPE_PRICE_PRO   = 'STRIPE_PRICE_PRO_HERE';   // price_xxx — filled by deploy
+const STRIPE_PRICE_ELITE = 'STRIPE_PRICE_ELITE_HERE'; // price_xxx — filled by deploy
+let _selectedTier = 'pro';
 
 // ════════════════════════════════════════════════════════════
 // SUPABASE CONFIGURATION
@@ -1782,6 +1831,102 @@ window.renderGuestGallery = function(slug, photos) {
 };
 
 console.log('Lumière:', SUPA_READY ? '✅ Connected to Supabase' : '⚠️ Demo mode (localStorage)');
+
+
+// ════════════════════════════════════════════════════════════
+// STRIPE INTEGRATION
+// ════════════════════════════════════════════════════════════
+
+function openUpgradeModal() {
+  if (!currentEvent) return;
+  // Don't show if already upgraded
+  if (currentEvent.tier === 'pro' || currentEvent.tier === 'elite') {
+    toast('This event is already on the ' + currentEvent.tier + ' plan!', 'ok');
+    return;
+  }
+  _selectedTier = 'pro';
+  selectUpgradeTier('pro');
+  openModal('modal-upgrade');
+}
+
+function selectUpgradeTier(tier) {
+  _selectedTier = tier;
+  const pro = document.getElementById('tc-pro');
+  const elite = document.getElementById('tc-elite');
+  if (!pro || !elite) return;
+  pro.style.border = tier === 'pro' ? '2px solid #b8955a' : '1.5px solid #e5ddd0';
+  pro.style.background = tier === 'pro' ? 'rgba(184,149,90,.04)' : 'transparent';
+  elite.style.border = tier === 'elite' ? '2px solid #b8955a' : '1.5px solid #e5ddd0';
+  elite.style.background = tier === 'elite' ? 'rgba(184,149,90,.04)' : 'transparent';
+}
+
+async function doStripeCheckout() {
+  if (!currentEvent || !currentUser) {
+    toast('Please sign in first', 'err'); return;
+  }
+  const btn = document.getElementById('btn-upgrade-pay');
+  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting to Stripe...'; }
+
+  // Demo mode: simulate upgrade
+  if (!SUPA_READY || STRIPE_PRICE_PRO === 'STRIPE_PRICE_PRO_HERE') {
+    await new Promise(r => setTimeout(r, 1000));
+    currentEvent.tier = _selectedTier;
+    if (DEMO_MODE) Demo.saveEvent(currentEvent);
+    else if (_sb) await _sb.from('events').update({ tier: _selectedTier }).eq('slug', currentEvent.slug);
+    const sc = document.getElementById('sc-tier') || document.getElementById('sc-t');
+    if (sc) sc.textContent = _selectedTier.charAt(0).toUpperCase() + _selectedTier.slice(1);
+    closeModal('modal-upgrade');
+    toast('✅ Upgraded to ' + _selectedTier + '! (demo — Stripe not yet configured)', 'ok');
+    if (btn) { btn.disabled = false; btn.textContent = 'Continue to Payment →'; }
+    return;
+  }
+
+  // Real Stripe checkout
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    const res = await fetch(STRIPE_CHECKOUT_FN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ event_slug: currentEvent.slug, tier: _selectedTier })
+    });
+    const { url, error } = await res.json();
+    if (error) throw new Error(error);
+    window.location.href = url;
+  } catch (e) {
+    toast('Checkout error: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = 'Continue to Payment →'; }
+  }
+}
+
+// Handle return from Stripe (success URL has ?upgraded=slug&tier=xxx)
+function handleStripeReturn() {
+  const params = new URLSearchParams(location.search);
+  const upgraded = params.get('upgraded');
+  const tier = params.get('tier');
+  if (upgraded && tier) {
+    setTimeout(() => {
+      toast('🎉 Successfully upgraded to ' + tier.charAt(0).toUpperCase() + tier.slice(1) + '!', 'ok');
+      // Clean URL
+      const url = location.href.split('?')[0];
+      history.replaceState({}, '', url);
+    }, 1000);
+  }
+}
+
+// ── TIER LIMIT ENFORCEMENT ──
+function checkTierLimit(slug, onLimitReached) {
+  const tier = currentEvent?.tier || 'free';
+  if (tier !== 'free') return false; // No limit for paid tiers
+  const photos = DEMO_MODE ? (Demo.getPhotos(slug) || []) : [];
+  if (photos.length >= 100) {
+    onLimitReached();
+    return true;
+  }
+  return false;
+}
 
 </script>
 </body>
