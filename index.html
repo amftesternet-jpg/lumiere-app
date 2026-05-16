@@ -3,929 +3,1786 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lumière — Share the Moment</title>
+<title>Lumière — Event Photo Sharing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
-:root {
-  --cream: #F5F0E8;
-  --champagne: #E8DCC8;
-  --gold: #C9A96E;
-  --gold-dark: #A07C44;
-  --charcoal: #1C1C1A;
-  --charcoal-soft: #2E2E2B;
-  --warm-gray: #6B6560;
-  --blush: #E8C4B8;
-  --sage: #8FAF8A;
-  --deep-rose: #9B4B5A;
-  --ink: #1A1814;
-  --surface: #FDFAF5;
-}
+/* ── RESET & TOKENS ── */
 *{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gold:#B8955A;--gold-light:#D4B483;--gold-dark:#8B6B35;
+  --ink:#0F0F0E;--ink-soft:#1E1E1C;--ink-muted:#6B6660;
+  --cream:#FAF7F2;--cream-dark:#F0EBE1;--white:#FFFFFF;
+  --border:#E5DDD0;--border-strong:#C8B99A;
+  --success:#3D7A5C;--error:#C0392B;--info:#2D6A9F;
+  --shadow-sm:0 1px 3px rgba(15,15,14,.06),0 1px 2px rgba(15,15,14,.04);
+  --shadow-md:0 4px 12px rgba(15,15,14,.08),0 2px 6px rgba(15,15,14,.05);
+  --shadow-lg:0 16px 40px rgba(15,15,14,.12),0 6px 16px rgba(15,15,14,.07);
+  --shadow-xl:0 32px 80px rgba(15,15,14,.18);
+  --radius-sm:6px;--radius-md:12px;--radius-lg:18px;--radius-xl:24px;
+  --font-display:'Cormorant Garamond',Georgia,serif;
+  --font-body:'Inter',system-ui,sans-serif;
+  --transition:all .18s cubic-bezier(.4,0,.2,1);
+}
 html{scroll-behavior:smooth;}
-body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--charcoal);overflow-x:hidden;}
+body{font-family:var(--font-body);background:var(--cream);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+
+/* ── LAYOUT ── */
+.page{display:none;min-height:100vh;}
+.page.active{display:block;}
+.container{max-width:1160px;margin:0 auto;padding:0 2rem;}
+
+/* ── TYPOGRAPHY ── */
+.display-xl{font-family:var(--font-display);font-size:clamp(3rem,5.5vw,5.2rem);line-height:1.06;font-weight:400;letter-spacing:-.02em;}
+.display-lg{font-family:var(--font-display);font-size:clamp(2rem,3.5vw,3.2rem);line-height:1.12;font-weight:400;letter-spacing:-.01em;}
+.display-md{font-family:var(--font-display);font-size:clamp(1.4rem,2.2vw,2rem);line-height:1.2;font-weight:400;}
+.display-sm{font-family:var(--font-display);font-size:1.25rem;line-height:1.3;font-weight:400;}
+em.serif{font-style:italic;color:var(--gold);}
+.label{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);}
+.body-lg{font-size:1.05rem;line-height:1.75;color:var(--ink-muted);font-weight:300;}
+.body-sm{font-size:.85rem;line-height:1.6;color:var(--ink-muted);}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--font-body);font-weight:500;border:none;cursor:pointer;transition:var(--transition);white-space:nowrap;border-radius:100px;}
+.btn:disabled{opacity:.45;pointer-events:none;}
+.btn-xl{font-size:.95rem;padding:.9rem 2rem;letter-spacing:.01em;}
+.btn-md{font-size:.85rem;padding:.65rem 1.4rem;}
+.btn-sm{font-size:.78rem;padding:.45rem 1rem;}
+.btn-primary{background:var(--ink);color:var(--white);}
+.btn-primary:hover{background:var(--ink-soft);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.btn-gold{background:var(--gold);color:var(--white);}
+.btn-gold:hover{background:var(--gold-dark);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.btn-outline{background:transparent;color:var(--ink);border:1.5px solid var(--border-strong);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold-dark);}
+.btn-ghost{background:transparent;color:var(--ink-muted);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--cream-dark);color:var(--ink);}
+.btn-danger{background:transparent;color:var(--error);border:1px solid rgba(192,57,43,.25);}
+.btn-danger:hover{background:rgba(192,57,43,.06);}
+.icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--white);border:1px solid var(--border);cursor:pointer;transition:var(--transition);flex-shrink:0;}
+.icon-btn:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm);}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:currentColor;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── FORM ── */
+.form-field{display:flex;flex-direction:column;gap:.35rem;}
+.form-label{font-size:.75rem;font-weight:600;color:var(--ink-muted);letter-spacing:.04em;}
+.form-input,.form-select,.form-textarea{font-family:var(--font-body);font-size:.9rem;color:var(--ink);background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:.7rem 1rem;outline:none;transition:var(--transition);width:100%;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,149,90,.12);}
+.form-textarea{resize:vertical;min-height:90px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.form-error{display:none;font-size:.78rem;color:var(--error);margin-top:.25rem;}
+.form-error.show{display:block;}
+
+/* ── ALERT ── */
+.alert{padding:.75rem 1rem;border-radius:var(--radius-md);font-size:.83rem;line-height:1.5;display:none;align-items:flex-start;gap:.6rem;}
+.alert.show{display:flex;}
+.alert-error{background:#FDF2F2;border:1px solid #F5C6C6;color:#922B2B;}
+.alert-success{background:#F2FAF5;border:1px solid #A8D5BA;color:#235C3A;}
+.alert-info{background:#EEF5FC;border:1px solid #A8C8E8;color:#1A4A73;}
 
 /* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 3rem;background:rgba(253,250,245,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,169,110,0.18);}
-.logo{font-family:'Playfair Display',serif;font-size:1.65rem;color:var(--charcoal);letter-spacing:-.5px;cursor:pointer;}
-.logo span{color:var(--gold);font-style:italic;}
-.nav-center{display:flex;gap:.2rem;}
-.lang-btn{padding:.28rem .7rem;border-radius:20px;border:1px solid transparent;background:none;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;color:var(--warm-gray);cursor:pointer;transition:all .2s;letter-spacing:.5px;}
-.lang-btn.active,.lang-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold);}
-.nav-right{display:flex;gap:.8rem;align-items:center;}
-.nav-link{font-size:.84rem;color:var(--warm-gray);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color .2s;padding:.3rem .5rem;}
-.nav-link:hover{color:var(--gold-dark);}
-.nav-cta{background:var(--charcoal);color:var(--cream);border:none;padding:.58rem 1.4rem;border-radius:30px;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:500;cursor:pointer;transition:all .25s;}
-.nav-cta:hover{background:var(--gold-dark);}
-
-/* ── HERO ── */
-.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:6rem 3rem 3rem;gap:3rem;position:relative;overflow:hidden;}
-.hero-bg{position:absolute;inset:0;z-index:0;}
-.hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.07;filter:saturate(0);}
-.hero-text{position:relative;z-index:2;}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.4);border-radius:20px;padding:.33rem .9rem;font-size:.73rem;font-weight:500;color:var(--gold-dark);letter-spacing:.8px;text-transform:uppercase;margin-bottom:1.4rem;}
-h1{font-family:'Playfair Display',serif;font-size:clamp(2.6rem,4.5vw,4rem);line-height:1.1;color:var(--ink);margin-bottom:1.4rem;letter-spacing:-1px;}
-h1 em{font-style:italic;color:var(--gold);}
-.hero-sub{font-size:1.05rem;line-height:1.75;color:var(--warm-gray);margin-bottom:2.2rem;max-width:420px;font-weight:300;}
-.hero-actions{display:flex;gap:.9rem;align-items:center;flex-wrap:wrap;}
-.btn-primary{background:var(--charcoal);color:var(--cream);border:none;padding:.88rem 1.9rem;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:.94rem;font-weight:500;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.5rem;}
-.btn-primary:hover{background:var(--gold-dark);transform:translateY(-2px);}
-.btn-ghost{background:transparent;color:var(--charcoal);border:1.5px solid var(--champagne);padding:.88rem 1.9rem;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:.94rem;font-weight:400;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.5rem;}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold-dark);}
-.hero-flags{display:flex;gap:.55rem;margin-top:2rem;align-items:center;}
-.hero-flags span{font-size:.73rem;color:var(--warm-gray);margin-right:.2rem;}
-.flag{width:26px;height:19px;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.1);font-size:15px;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
-
-/* ── HERO VISUAL ── */
-.hero-visual{position:relative;display:flex;justify-content:center;align-items:center;z-index:2;}
-.phone-frame{width:274px;height:570px;background:var(--charcoal);border-radius:40px;padding:13px;box-shadow:0 0 0 1px rgba(255,255,255,.07) inset,0 28px 75px rgba(28,28,26,.32);position:relative;}
-.phone-notch{width:78px;height:21px;background:var(--charcoal);border-radius:0 0 14px 14px;position:absolute;top:13px;left:50%;transform:translateX(-50%);z-index:10;}
-.phone-screen{width:100%;height:100%;background:var(--surface);border-radius:30px;overflow:hidden;display:flex;flex-direction:column;}
-.app-header{background:#fff;padding:36px 15px 11px;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;}
-.app-header-title{font-family:'Playfair Display',serif;font-size:.97rem;color:var(--ink);}
-.app-header-icon{width:30px;height:30px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;}
-.app-header-icon svg{width:15px;height:15px;fill:#fff;}
-.app-event-banner{background:linear-gradient(135deg,#2E2E2B 0%,#1C1C1A 100%);padding:12px 14px;display:flex;align-items:center;gap:9px;}
-.event-thumbnail{width:42px;height:42px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;overflow:hidden;}
-.event-thumbnail img{width:100%;height:100%;object-fit:cover;}
-.event-name{font-size:.78rem;font-weight:500;color:#fff;margin-bottom:2px;}
-.event-meta{font-size:.63rem;color:rgba(255,255,255,.5);display:flex;gap:7px;}
-.event-badge{background:var(--gold);color:#fff;font-size:.58rem;font-weight:500;padding:2px 6px;border-radius:9px;align-self:flex-start;margin-top:1px;}
-.app-photos-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;flex:1;overflow:hidden;}
-.photo-cell{position:relative;overflow:hidden;cursor:pointer;}
-.photo-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s;}
-.photo-cell:hover img{transform:scale(1.07);}
-.photo-overlay{position:absolute;bottom:4px;left:4px;display:flex;gap:3px;}
-.photo-heart{background:rgba(255,255,255,.9);border-radius:4px;padding:2px 5px;font-size:.52rem;display:flex;align-items:center;gap:2px;color:var(--deep-rose);font-weight:500;}
-.app-bottom-bar{background:#fff;border-top:1px solid rgba(0,0,0,.07);padding:9px 0 14px;display:flex;justify-content:space-around;}
-.tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
-.tab-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
-.tab-icon svg{width:17px;height:17px;}
-.tab-label{font-size:.5rem;color:var(--warm-gray);font-weight:400;letter-spacing:.2px;}
-.tab-item.active .tab-label{color:var(--gold);}
-
-/* floating cards */
-.floating-card{position:absolute;background:#fff;border-radius:14px;padding:9px 13px;box-shadow:0 8px 28px rgba(28,28,26,.12);z-index:5;border:1px solid rgba(201,169,110,.15);animation:float 4s ease-in-out infinite;}
-.floating-card:nth-child(2){animation-delay:-2s;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.card-guests{top:7%;right:-55px;display:flex;align-items:center;gap:8px;}
-.guest-avatars{display:flex;}
-.avatar{width:25px;height:25px;border-radius:50%;border:2px solid #fff;margin-left:-5px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:600;overflow:hidden;}
-.avatar:first-child{margin-left:0;}
-.av-1{background:var(--blush);color:var(--deep-rose);}
-.av-2{background:#C8D8C0;color:#3D6636;}
-.av-3{background:#C8D4E8;color:#3D5480;}
-.av-more{background:var(--champagne);color:var(--gold-dark);}
-.guests-text{font-size:.68rem;color:var(--warm-gray);}
-.guests-count{font-weight:600;color:var(--charcoal);font-size:.82rem;display:block;}
-.card-upload{bottom:18%;right:-50px;}
-.upload-row{display:flex;align-items:center;gap:8px;}
-.upload-icon{width:27px;height:27px;background:var(--gold);border-radius:7px;display:flex;align-items:center;justify-content:center;}
-.upload-icon svg{width:13px;height:13px;fill:#fff;}
-.upload-text{font-size:.68rem;}
-.upload-label{color:var(--charcoal);font-weight:500;}
-.upload-meta{color:var(--warm-gray);font-size:.6rem;}
-
-/* ── SECTIONS ── */
-section{padding:5.5rem 3rem;}
-.section-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.73rem;font-weight:500;color:var(--gold-dark);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:.9rem;}
-.section-eyebrow::before{content:'';display:block;width:22px;height:1px;background:var(--gold);}
-h2{font-family:'Playfair Display',serif;font-size:clamp(1.9rem,3.2vw,2.8rem);line-height:1.15;color:var(--ink);margin-bottom:1.1rem;letter-spacing:-.5px;}
-h2 em{font-style:italic;color:var(--gold);}
-.section-sub{font-size:.98rem;line-height:1.78;color:var(--warm-gray);max-width:470px;font-weight:300;}
-
-/* ── FEATURES ── */
-.features{background:var(--charcoal);}
-.features .section-eyebrow{color:rgba(201,169,110,.8);}
-.features .section-eyebrow::before{background:rgba(201,169,110,.5);}
-.features h2{color:var(--cream);}
-.features .section-sub{color:rgba(245,240,232,.5);}
-.features-header{max-width:580px;margin-bottom:3.5rem;}
-.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5px;background:rgba(255,255,255,.06);border-radius:18px;overflow:hidden;}
-.feature-card{background:var(--charcoal-soft);padding:2.2rem 1.8rem;transition:background .3s;cursor:default;}
-.feature-card:hover{background:rgba(201,169,110,.08);}
-.feature-icon{width:46px;height:46px;border-radius:13px;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.2);display:flex;align-items:center;justify-content:center;margin-bottom:1.3rem;}
-.feature-icon svg{width:21px;height:21px;stroke:var(--gold);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
-.feature-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--cream);margin-bottom:.6rem;font-weight:600;}
-.feature-desc{font-size:.85rem;line-height:1.7;color:rgba(245,240,232,.48);font-weight:300;}
-
-/* ── HOW IT WORKS ── */
-.how-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;}
-.steps{display:flex;flex-direction:column;gap:1.7rem;margin-top:2.5rem;}
-.step{display:flex;gap:1.4rem;align-items:flex-start;padding:1.3rem;border-radius:14px;border:1px solid transparent;transition:all .3s;cursor:default;}
-.step:hover{background:rgba(201,169,110,.05);border-color:rgba(201,169,110,.2);}
-.step-num{width:40px;height:40px;border-radius:11px;background:var(--champagne);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:600;color:var(--gold-dark);flex-shrink:0;}
-.step h3{font-size:.97rem;font-weight:500;color:var(--ink);margin-bottom:.35rem;}
-.step p{font-size:.85rem;color:var(--warm-gray);line-height:1.6;font-weight:300;}
-
-/* Phone 2 */
-.phone-frame-2{width:254px;height:510px;background:var(--charcoal);border-radius:36px;padding:12px;box-shadow:0 22px 65px rgba(28,28,26,.22);margin:0 auto;}
-.phone-screen-2{width:100%;height:100%;border-radius:28px;overflow:hidden;background:#fff;display:flex;flex-direction:column;}
-.invite-header{background:var(--charcoal);padding:28px 15px 15px;text-align:center;}
-.invite-qr{width:76px;height:76px;background:#fff;border-radius:11px;margin:0 auto 9px;display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:7px;}
-.qr-cell{background:var(--charcoal);border-radius:1px;}
-.qr-cell.empty{background:#fff;}
-.invite-name{font-family:'Playfair Display',serif;color:var(--cream);font-size:.87rem;}
-.invite-date{color:rgba(245,240,232,.45);font-size:.65rem;margin-top:2px;}
-.invite-body{flex:1;padding:13px;display:flex;flex-direction:column;gap:9px;}
-.invite-stat{background:var(--surface);border-radius:11px;padding:11px;display:flex;align-items:center;gap:9px;border:1px solid rgba(0,0,0,.05);}
-.stat-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-.stat-label{font-size:.62rem;color:var(--warm-gray);}
-.stat-val{font-size:.9rem;font-weight:500;color:var(--ink);}
-.share-btn-inner{background:var(--gold);color:#fff;border:none;border-radius:11px;padding:11px;width:100%;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;margin-top:auto;transition:background .2s;}
-.share-btn-inner:hover{background:var(--gold-dark);}
-
-/* ── GALLERY ── */
-.gallery-section{background:var(--cream);}
-.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:200px;gap:12px;margin-top:2.5rem;}
-.gallery-item{border-radius:14px;overflow:hidden;position:relative;cursor:pointer;}
-.gallery-item.tall{grid-row:span 2;}
-.gallery-item.wide{grid-column:span 2;}
-.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s;}
-.gallery-item:hover img{transform:scale(1.06);}
-.gallery-overlay{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(28,28,26,.6));opacity:0;transition:opacity .3s;display:flex;align-items:flex-end;padding:14px;}
-.gallery-item:hover .gallery-overlay{opacity:1;}
-.gallery-tag{background:rgba(255,255,255,.9);border-radius:6px;padding:3px 9px;font-size:.7rem;font-weight:500;color:var(--charcoal);}
-
-/* ── LANGUAGES ── */
-.languages-section{text-align:center;}
-.languages-section h2{margin:0 auto 1rem;}
-.languages-section .section-sub{margin:0 auto 2.5rem;}
-.lang-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.3rem;margin-top:2.5rem;}
-.lang-card{background:#fff;border-radius:18px;padding:1.8rem 1.4rem;border:1px solid rgba(201,169,110,.15);transition:all .3s;cursor:pointer;text-align:left;}
-.lang-card:hover{transform:translateY(-4px);box-shadow:0 14px 38px rgba(28,28,26,.1);border-color:var(--gold);}
-.lang-flag{font-size:2rem;margin-bottom:.9rem;display:block;}
-.lang-name{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--ink);margin-bottom:.35rem;}
-.lang-tagline{font-size:.78rem;color:var(--warm-gray);font-style:italic;font-family:'Playfair Display',serif;margin-bottom:.75rem;}
-.lang-ui-preview{font-size:.73rem;color:var(--warm-gray);font-weight:300;line-height:1.6;border-top:1px solid var(--champagne);padding-top:.75rem;margin-top:.4rem;}
-.lang-ui-preview strong{color:var(--charcoal);font-weight:500;}
-
-/* ── EVENTS ── */
-.events-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:2.5rem;}
-.event-card{border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.07);transition:transform .3s,box-shadow .3s;cursor:pointer;}
-.event-card:hover{transform:translateY(-4px);box-shadow:0 18px 45px rgba(28,28,26,.1);}
-.event-cover{height:190px;position:relative;overflow:hidden;}
-.event-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s;}
-.event-card:hover .event-cover img{transform:scale(1.05);}
-.event-cover-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.55));padding:20px 15px 11px;}
-.event-cover-tag{background:rgba(255,255,255,.9);font-size:.63rem;font-weight:500;padding:3px 8px;border-radius:9px;color:var(--charcoal);display:inline-block;}
-.event-body{padding:1.15rem;background:#fff;}
-.event-body h3{font-family:'Playfair Display',serif;font-size:1.02rem;color:var(--ink);margin-bottom:.3rem;}
-.event-body-meta{font-size:.75rem;color:var(--warm-gray);margin-bottom:.75rem;display:flex;align-items:center;gap:.45rem;}
-.event-body-meta svg{width:11px;height:11px;stroke:var(--warm-gray);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;}
-.event-stats{display:flex;gap:.9rem;padding-top:.75rem;border-top:1px solid var(--champagne);}
-.e-stat{font-size:.72rem;color:var(--warm-gray);}
-.e-stat strong{color:var(--charcoal);font-weight:500;display:block;font-size:.87rem;}
-
-/* ── PRICING ── */
-.pricing-section{background:var(--charcoal);}
-.pricing-section h2{color:var(--cream);}
-.pricing-section .section-sub{color:rgba(245,240,232,.5);}
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem;}
-.price-card{border-radius:18px;padding:2rem 1.7rem;border:1px solid rgba(255,255,255,.08);background:var(--charcoal-soft);transition:all .3s;position:relative;}
-.price-card.featured{border-color:var(--gold);background:rgba(201,169,110,.08);}
-.price-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;font-size:.68rem;font-weight:500;padding:4px 14px;border-radius:12px;white-space:nowrap;}
-.price-name{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--cream);margin-bottom:.5rem;}
-.price-amount{font-size:2.2rem;font-weight:600;color:var(--cream);margin-bottom:.3rem;}
-.price-amount span{font-size:1rem;font-weight:300;color:rgba(245,240,232,.45);}
-.price-sub{font-size:.75rem;color:rgba(245,240,232,.4);margin-bottom:1.6rem;}
-.price-features{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.8rem;}
-.price-features li{font-size:.82rem;color:rgba(245,240,232,.55);display:flex;gap:.5rem;align-items:center;}
-.price-features li.on{color:rgba(245,240,232,.8);}
-.price-features li::before{content:'✓';color:var(--gold);font-weight:600;flex-shrink:0;}
-.price-features li.off::before{content:'·';color:rgba(245,240,232,.25);}
-.btn-price{width:100%;padding:.82rem;border-radius:30px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;transition:all .25s;}
-.btn-price-outline{background:transparent;color:var(--cream);border:1.5px solid rgba(255,255,255,.2);}
-.btn-price-outline:hover{border-color:var(--gold);color:var(--gold);}
-.btn-price-gold{background:var(--gold);color:#fff;border:none;}
-.btn-price-gold:hover{background:var(--gold-dark);}
-
-/* ── CTA ── */
-.cta-section{background:var(--ink);text-align:center;padding:6.5rem 3rem;position:relative;overflow:hidden;}
-.cta-section::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:560px;height:560px;border-radius:50%;border:1px solid rgba(201,169,110,.08);pointer-events:none;}
-.cta-section::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:360px;height:360px;border-radius:50%;border:1px solid rgba(201,169,110,.1);pointer-events:none;}
-.cta-section h2{color:var(--cream);font-size:clamp(1.9rem,3.6vw,3rem);position:relative;z-index:1;}
-.cta-section .section-sub{color:rgba(245,240,232,.45);margin:0 auto 2.3rem;position:relative;z-index:1;}
-.cta-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;}
-.btn-gold{background:var(--gold);color:#fff;border:none;padding:.95rem 2.1rem;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:.97rem;font-weight:500;cursor:pointer;transition:all .25s;}
-.btn-gold:hover{background:var(--gold-dark);transform:translateY(-2px);}
-.btn-outline-light{background:transparent;color:var(--cream);border:1.5px solid rgba(245,240,232,.25);padding:.95rem 2.1rem;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:.97rem;cursor:pointer;transition:all .25s;}
-.btn-outline-light:hover{border-color:var(--gold);color:var(--gold);}
-
-/* ── FOOTER ── */
-footer{background:var(--charcoal-soft);padding:2.8rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.3rem;}
-.footer-logo{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--cream);cursor:pointer;}
-.footer-logo span{color:var(--gold);font-style:italic;}
-.footer-links{display:flex;gap:1.7rem;}
-.footer-links a{font-size:.8rem;color:rgba(245,240,232,.4);text-decoration:none;transition:color .2s;}
-.footer-links a:hover{color:var(--gold);}
-.footer-copy{font-size:.73rem;color:rgba(245,240,232,.28);}
-
-/* ── MODAL ── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(28,28,26,.75);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;}
-.modal-backdrop.open{display:flex;}
-.modal{background:#fff;border-radius:24px;width:min(520px,92vw);padding:2.5rem;position:relative;animation:modalIn .3s ease;}
-@keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(.97);}to{opacity:1;transform:none;}}
-.modal-close{position:absolute;top:1.2rem;right:1.2rem;width:34px;height:34px;background:var(--cream);border:none;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;color:var(--warm-gray);transition:background .2s;}
-.modal-close:hover{background:var(--champagne);}
-.modal h3{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--ink);margin-bottom:.4rem;}
-.modal p{font-size:.9rem;color:var(--warm-gray);margin-bottom:1.8rem;font-weight:300;}
-.modal-form{display:flex;flex-direction:column;gap:1rem;}
-.form-group{display:flex;flex-direction:column;gap:.35rem;}
-.form-label{font-size:.78rem;font-weight:500;color:var(--warm-gray);letter-spacing:.4px;}
-.form-input{padding:.72rem 1rem;border:1.5px solid var(--champagne);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--ink);outline:none;transition:border-color .2s;background:var(--surface);}
-.form-input:focus{border-color:var(--gold);}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
-.form-select{padding:.72rem 1rem;border:1.5px solid var(--champagne);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--ink);outline:none;background:var(--surface);cursor:pointer;}
-.form-select:focus{border-color:var(--gold);}
-.btn-submit{background:var(--gold);color:#fff;border:none;padding:.9rem;border-radius:30px;font-family:'DM Sans',sans-serif;font-size:.97rem;font-weight:500;cursor:pointer;transition:all .25s;margin-top:.3rem;}
-.btn-submit:hover{background:var(--gold-dark);}
-
-/* ── VIDEO MODAL ── */
-.video-modal{background:var(--ink);border-radius:24px;width:min(640px,95vw);padding:2rem;position:relative;}
-.video-embed{width:100%;aspect-ratio:16/9;background:#000;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;overflow:hidden;position:relative;}
-.video-play{width:70px;height:70px;background:rgba(201,169,110,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s;border:3px solid rgba(255,255,255,.3);}
-.video-play:hover{transform:scale(1.08);}
-.video-play svg{width:26px;height:26px;fill:#fff;margin-left:4px;}
-.video-bg{position:absolute;inset:0;object-fit:cover;opacity:.4;}
-.video-title{font-family:'Playfair Display',serif;color:var(--cream);font-size:1.2rem;margin-bottom:.4rem;}
-.video-sub{font-size:.82rem;color:rgba(245,240,232,.45);}
+#main-nav{position:fixed;top:0;left:0;right:0;z-index:300;height:64px;display:flex;align-items:center;background:rgba(250,247,242,.92);backdrop-filter:blur(20px) saturate(1.8);border-bottom:1px solid var(--border);transition:var(--transition);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 2rem;}
+.nav-logo{font-family:var(--font-display);font-size:1.6rem;color:var(--ink);cursor:pointer;letter-spacing:-.02em;display:flex;align-items:baseline;gap:.05rem;}
+.nav-logo em{font-style:italic;color:var(--gold);}
+.nav-center{display:flex;align-items:center;gap:.25rem;}
+.lang-pill{padding:.3rem .65rem;border-radius:100px;border:1px solid transparent;background:none;font-family:var(--font-body);font-size:.72rem;font-weight:600;letter-spacing:.06em;color:var(--ink-muted);cursor:pointer;transition:var(--transition);}
+.lang-pill:hover{color:var(--ink);}
+.lang-pill.active{background:var(--ink);color:var(--white);}
+.nav-right{display:flex;align-items:center;gap:.75rem;}
+.nav-text-link{font-size:.83rem;font-weight:500;color:var(--ink-muted);background:none;border:none;cursor:pointer;transition:var(--transition);padding:.3rem .5rem;border-radius:6px;}
+.nav-text-link:hover{color:var(--ink);background:var(--cream-dark);}
+.nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--gold);color:var(--white);font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);}
+.nav-avatar:hover{background:var(--gold-dark);}
+.nav-user{display:none;align-items:center;gap:.6rem;}
+.nav-user.show{display:flex;}
 
 /* ── TOAST ── */
-.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--charcoal);color:var(--cream);border-radius:30px;padding:.7rem 1.6rem;font-size:.85rem;font-weight:500;z-index:600;transition:transform .4s ease;white-space:nowrap;box-shadow:0 8px 30px rgba(28,28,26,.3);}
-.toast.show{transform:translateX(-50%) translateY(0);}
+#toast-container{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none;}
+.toast{font-family:var(--font-body);font-size:.83rem;font-weight:500;padding:.6rem 1.2rem;border-radius:100px;box-shadow:var(--shadow-lg);pointer-events:none;animation:toastIn .22s ease;white-space:nowrap;}
+.toast-default{background:var(--ink);color:var(--white);}
+.toast-success{background:var(--success);color:var(--white);}
+.toast-error{background:var(--error);color:var(--white);}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-/* ── ANIMATIONS ── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
-.fade-up{animation:fadeUp .7s ease forwards;}
-.fade-up-2{animation:fadeUp .7s .15s ease both;}
-.fade-up-3{animation:fadeUp .7s .3s ease both;}
-.fade-up-4{animation:fadeUp .7s .45s ease both;}
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,15,14,.55);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius-xl);width:min(520px,100%);padding:2.25rem;position:relative;animation:modalIn .22s ease;max-height:90vh;overflow-y:auto;}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.98);}to{opacity:1;transform:none;}}
+.modal-close{position:absolute;top:1.25rem;right:1.25rem;width:32px;height:32px;border-radius:50%;background:var(--cream-dark);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-muted);font-size:1rem;transition:var(--transition);}
+.modal-close:hover{background:var(--cream);color:var(--ink);}
+.modal-title{font-family:var(--font-display);font-size:1.7rem;color:var(--ink);margin-bottom:.35rem;}
+.modal-sub{font-size:.88rem;color:var(--ink-muted);margin-bottom:1.5rem;line-height:1.5;}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.modal-tab{flex:1;padding:.65rem;text-align:center;font-size:.83rem;font-weight:600;color:var(--ink-muted);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--transition);}
+.modal-tab.active{color:var(--gold-dark);border-bottom-color:var(--gold);}
+.modal-pane{display:none;}
+.modal-pane.active{display:block;}
+.modal-actions{display:flex;gap:.75rem;margin-top:1.25rem;}
 
-@media(max-width:900px){nav{padding:1rem 1.5rem;}.hero{grid-template-columns:1fr;padding:5rem 1.5rem 3rem;}.hero-visual{display:none;}h1{font-size:2.4rem;}.features-grid{grid-template-columns:1fr;}.how-wrapper{grid-template-columns:1fr;}.lang-cards{grid-template-columns:1fr 1fr;}.events-grid{grid-template-columns:1fr;}.pricing-grid{grid-template-columns:1fr;}.gallery-grid{grid-template-columns:1fr 1fr;}.gallery-item.wide{grid-column:span 1;}.gallery-item.tall{grid-row:span 1;}section{padding:3.5rem 1.5rem;}}
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:1.25rem 0;}
+
+/* ── CARD ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;}
+.card-sm{padding:1rem;}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:100px;font-size:.7rem;font-weight:600;letter-spacing:.04em;}
+.badge-gold{background:rgba(184,149,90,.12);color:var(--gold-dark);}
+.badge-success{background:rgba(61,122,92,.1);color:var(--success);}
+.badge-live{background:var(--success);color:var(--white);animation:pulseBadge 2s ease infinite;}
+@keyframes pulseBadge{0%,100%{opacity:1;}50%{opacity:.75;}}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* ── LOADING SCREEN ── */
+#loading-screen{position:fixed;inset:0;background:var(--cream);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;transition:opacity .4s ease;}
+.loading-logo{font-family:var(--font-display);font-size:3rem;color:var(--ink);letter-spacing:-.02em;}
+.loading-logo em{font-style:italic;color:var(--gold);}
+.loading-track{width:100px;height:1px;background:var(--border);border-radius:100px;overflow:hidden;}
+.loading-fill{height:100%;background:var(--gold);border-radius:100px;animation:loadFill 1.4s cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes loadFill{from{width:0;}to{width:100%;}}
+
+/* ─────────────── HOME PAGE ─────────────── */
+/* HERO */
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:4rem;padding:7rem 2rem 4rem;max-width:1160px;margin:0 auto;}
+.hero-kicker{display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1.5rem;}
+.hero-kicker-line{width:28px;height:1px;background:var(--gold);}
+.hero-kicker-text{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dark);}
+.hero-title{margin-bottom:1.25rem;}
+.hero-body{font-size:1.05rem;line-height:1.78;color:var(--ink-muted);font-weight:300;max-width:440px;margin-bottom:2.25rem;}
+.hero-actions{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:2.5rem;}
+.hero-trust{display:flex;align-items:center;gap:.75rem;}
+.hero-trust-flags{display:flex;gap:.3rem;}
+.hero-trust-text{font-size:.75rem;color:var(--ink-muted);font-weight:400;}
+
+/* HERO VISUAL */
+.hero-visual{position:relative;display:flex;justify-content:center;align-items:center;}
+.phone-shell{width:280px;height:580px;background:var(--ink);border-radius:44px;padding:12px;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,var(--shadow-xl);position:relative;}
+.phone-island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:26px;background:var(--ink);border-radius:0 0 18px 18px;z-index:10;}
+.phone-screen{width:100%;height:100%;background:var(--cream);border-radius:34px;overflow:hidden;display:flex;flex-direction:column;}
+.ps-header{background:var(--white);padding:38px 14px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ps-logo{font-family:var(--font-display);font-size:.95rem;color:var(--ink);}
+.ps-live{display:flex;align-items:center;gap:.3rem;font-size:.6rem;font-weight:600;color:var(--success);}
+.ps-live-dot{width:5px;height:5px;border-radius:50%;background:var(--success);}
+.ps-event{background:linear-gradient(135deg,var(--ink-soft),var(--ink));padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.ps-thumb{width:38px;height:38px;border-radius:10px;overflow:hidden;flex-shrink:0;}
+.ps-thumb img{width:100%;height:100%;object-fit:cover;}
+.ps-event-name{font-size:.75rem;font-weight:600;color:var(--white);margin-bottom:2px;}
+.ps-event-meta{font-size:.6rem;color:rgba(255,255,255,.5);}
+.ps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;flex:1;overflow:hidden;}
+.ps-photo{position:relative;overflow:hidden;aspect-ratio:1;}
+.ps-photo img{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+.ps-photo:hover img{transform:scale(1.06);}
+.ps-like{position:absolute;bottom:4px;left:4px;background:rgba(255,255,255,.88);border-radius:5px;padding:2px 5px;font-size:.5rem;color:#B04060;font-weight:600;}
+.ps-bar{background:var(--white);border-top:1px solid var(--border);padding:9px 0 13px;display:flex;justify-content:space-around;}
+.ps-tab{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.ps-tab svg{width:16px;height:16px;}
+.ps-tab-label{font-size:.49rem;color:var(--ink-muted);}
+.ps-tab.active .ps-tab-label{color:var(--gold);}
+
+/* Floating cards */
+.float-card{position:absolute;background:var(--white);border-radius:14px;padding:9px 13px;box-shadow:var(--shadow-lg);border:1px solid var(--border);animation:floatY 4s ease-in-out infinite;}
+.float-card:nth-child(2){animation-delay:-2s;}
+@keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.float-guests{top:8%;right:-60px;display:flex;align-items:center;gap:8px;}
+.float-avatars{display:flex;}
+.f-av{width:24px;height:24px;border-radius:50%;border:2px solid var(--white);margin-left:-6px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.f-av:first-child{margin-left:0;}
+.f-av-1{background:#F2D5CC;color:#8B3040;}
+.f-av-2{background:#C8DBC0;color:#2D5C30;}
+.f-av-3{background:#C8D4E8;color:#2D4A70;}
+.f-av-more{background:var(--cream-dark);color:var(--gold-dark);}
+.float-guests-info{font-size:.67rem;color:var(--ink-muted);}
+.float-guests-count{font-weight:700;color:var(--ink);font-size:.8rem;display:block;}
+.float-upload{bottom:20%;right:-58px;}
+.float-upload-row{display:flex;align-items:center;gap:8px;}
+.float-upload-icon{width:28px;height:28px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.float-upload-icon svg{width:13px;height:13px;stroke:var(--white);fill:none;stroke-width:2;}
+.float-upload-text{font-size:.68rem;}
+.float-upload-label{color:var(--ink);font-weight:600;}
+.float-upload-meta{color:var(--ink-muted);font-size:.6rem;}
+
+/* STATS BAR */
+.stats-bar{background:var(--ink-soft);color:var(--white);padding:1.5rem 2rem;}
+.stats-bar-inner{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;gap:2rem;flex-wrap:wrap;}
+.stat-item{text-align:center;}
+.stat-num{font-family:var(--font-display);font-size:2.4rem;font-weight:400;color:var(--gold-light);line-height:1;}
+.stat-lbl{font-size:.72rem;color:rgba(255,255,255,.5);font-weight:400;margin-top:.2rem;letter-spacing:.04em;}
+
+/* FEATURES */
+.features-section{padding:7rem 2rem;}
+.features-header{max-width:680px;margin:0 auto 4rem;text-align:center;}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--radius-xl);overflow:hidden;}
+.feature-tile{background:var(--white);padding:2.5rem 2rem;transition:var(--transition);}
+.feature-tile:hover{background:var(--cream);}
+.feature-icon-wrap{width:48px;height:48px;border-radius:14px;background:var(--cream-dark);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;}
+.feature-icon-wrap svg{width:22px;height:22px;stroke:var(--gold-dark);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.feature-name{font-family:var(--font-display);font-size:1.15rem;color:var(--ink);margin-bottom:.5rem;}
+.feature-desc{font-size:.83rem;line-height:1.7;color:var(--ink-muted);}
+
+/* HOW IT WORKS */
+.how-section{background:var(--ink-soft);padding:7rem 2rem;color:var(--white);}
+.how-inner{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:center;}
+.how-label{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:1rem;}
+.how-title{font-family:var(--font-display);font-size:clamp(2rem,3vw,2.8rem);color:var(--white);margin-bottom:2.5rem;line-height:1.15;}
+.how-title em{font-style:italic;color:var(--gold-light);}
+.how-steps{display:flex;flex-direction:column;gap:0;}
+.how-step{display:flex;gap:1.5rem;align-items:flex-start;padding:1.5rem 0;border-bottom:1px solid rgba(255,255,255,.07);}
+.how-step:last-child{border-bottom:none;}
+.how-step-num{width:36px;height:36px;border-radius:10px;background:rgba(184,149,90,.15);border:1px solid rgba(184,149,90,.25);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1rem;color:var(--gold-light);flex-shrink:0;}
+.how-step-title{font-size:.93rem;font-weight:600;color:var(--white);margin-bottom:.3rem;}
+.how-step-desc{font-size:.82rem;color:rgba(255,255,255,.45);line-height:1.65;}
+.how-visual{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-xl);padding:2.5rem;text-align:center;}
+.how-visual-emoji{font-size:3.5rem;margin-bottom:1rem;}
+.how-visual-title{font-family:var(--font-display);font-size:1.5rem;color:var(--white);margin-bottom:.5rem;}
+.how-visual-sub{font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:1.5rem;line-height:1.6;}
+.how-chips{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;}
+.how-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:.3rem .8rem;font-size:.72rem;color:rgba(255,255,255,.6);}
+
+/* GALLERY SECTION */
+.gallery-section{padding:7rem 2rem;}
+.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:190px;gap:10px;margin-top:3rem;}
+.gallery-cell{border-radius:var(--radius-md);overflow:hidden;position:relative;cursor:pointer;}
+.gallery-cell.tall{grid-row:span 2;}
+.gallery-cell.wide{grid-column:span 2;}
+.gallery-cell img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+.gallery-cell:hover img{transform:scale(1.05);}
+.gallery-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,15,14,.7) 0%,transparent 50%);opacity:0;transition:opacity .3s;display:flex;align-items:flex-end;padding:12px;}
+.gallery-cell:hover .gallery-overlay{opacity:1;}
+.gallery-tag{background:rgba(255,255,255,.9);border-radius:100px;padding:3px 10px;font-size:.67rem;font-weight:600;color:var(--ink);}
+
+/* LANG SECTION */
+.lang-section{background:var(--cream-dark);padding:7rem 2rem;}
+.lang-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:3rem;}
+.lang-card{background:var(--white);border-radius:var(--radius-lg);padding:1.75rem 1.5rem;border:1px solid var(--border);transition:var(--transition);cursor:pointer;}
+.lang-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+.lang-card.active-lang{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,149,90,.12);}
+.lang-flag{font-size:2rem;display:block;margin-bottom:.75rem;}
+.lang-name{font-family:var(--font-display);font-size:1.15rem;color:var(--ink);margin-bottom:.25rem;}
+.lang-tagline{font-size:.78rem;color:var(--ink-muted);font-style:italic;font-family:var(--font-display);margin-bottom:.75rem;}
+.lang-preview{font-size:.73rem;color:var(--ink-muted);line-height:1.65;border-top:1px solid var(--border);padding-top:.75rem;}
+.lang-preview strong{color:var(--ink);font-weight:600;}
+
+/* PRICING */
+.pricing-section{padding:7rem 2rem;background:var(--white);}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-top:3.5rem;}
+.price-card{border-radius:var(--radius-xl);padding:2.25rem 2rem;border:1px solid var(--border);position:relative;background:var(--cream);}
+.price-card.featured{border-color:var(--gold);background:var(--white);box-shadow:var(--shadow-lg);}
+.price-pill{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--white);font-size:.68rem;font-weight:700;letter-spacing:.06em;padding:4px 16px;border-radius:100px;}
+.price-tier{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.75rem;}
+.price-amount{font-family:var(--font-display);font-size:3rem;color:var(--ink);line-height:1;margin-bottom:.25rem;}
+.price-period{font-size:.83rem;color:var(--ink-muted);}
+.price-desc{font-size:.83rem;color:var(--ink-muted);margin:1rem 0 1.5rem;padding-top:1rem;border-top:1px solid var(--border);}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem;}
+.price-features li{font-size:.83rem;color:var(--ink-muted);display:flex;gap:.6rem;align-items:flex-start;}
+.price-features li.on{color:var(--ink);}
+.price-features li::before{content:'✓';color:var(--gold);font-weight:700;flex-shrink:0;margin-top:.05rem;}
+.price-features li.off{opacity:.45;}
+.price-features li.off::before{content:'—';color:var(--ink-muted);}
+
+/* CTA */
+.cta-section{background:var(--ink);padding:7rem 2rem;text-align:center;position:relative;overflow:hidden;}
+.cta-section::before,.cta-section::after{content:'';position:absolute;border-radius:50%;border:1px solid rgba(184,149,90,.1);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.cta-section::before{width:600px;height:600px;}
+.cta-section::after{width:350px;height:350px;}
+.cta-inner{position:relative;z-index:1;}
+.cta-title{font-family:var(--font-display);font-size:clamp(2rem,4vw,3.5rem);color:var(--white);margin-bottom:1rem;line-height:1.1;}
+.cta-title em{font-style:italic;color:var(--gold-light);}
+.cta-sub{font-size:.95rem;color:rgba(255,255,255,.45);margin-bottom:2.5rem;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.7;}
+.cta-btns{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;}
+
+/* FOOTER */
+.site-footer{background:var(--ink-soft);padding:3rem 2rem;border-top:1px solid rgba(255,255,255,.06);}
+.footer-inner{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;}
+.footer-logo{font-family:var(--font-display);font-size:1.4rem;color:var(--white);cursor:pointer;}
+.footer-logo em{font-style:italic;color:var(--gold-light);}
+.footer-links{display:flex;gap:2rem;}
+.footer-links a{font-size:.78rem;color:rgba(255,255,255,.35);text-decoration:none;transition:var(--transition);}
+.footer-links a:hover{color:var(--gold-light);}
+.footer-copy{font-size:.72rem;color:rgba(255,255,255,.2);}
+
+/* ─────────────── DASHBOARD ─────────────── */
+#page-dashboard{background:var(--cream);padding-top:64px;}
+.dash-wrap{max-width:1160px;margin:0 auto;padding:3rem 2rem 5rem;}
+.dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:3rem;gap:1.5rem;flex-wrap:wrap;}
+.dash-title{font-family:var(--font-display);font-size:2.4rem;color:var(--ink);margin-bottom:.25rem;}
+.dash-subtitle{font-size:.88rem;color:var(--ink-muted);}
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.25rem;}
+.ev-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;cursor:pointer;transition:var(--transition);}
+.ev-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+.ev-card-cover{height:145px;position:relative;background:linear-gradient(135deg,var(--cream-dark),var(--cream));display:flex;align-items:center;justify-content:center;font-size:3.2rem;}
+.ev-card-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.ev-card-cover-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,15,14,.4),transparent);}
+.ev-card-body{padding:1.25rem;}
+.ev-card-type{font-size:.67rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.3rem;}
+.ev-card-name{font-family:var(--font-display);font-size:1.15rem;color:var(--ink);margin-bottom:.25rem;}
+.ev-card-date{font-size:.78rem;color:var(--ink-muted);margin-bottom:.9rem;}
+.ev-card-stats{display:flex;gap:1.25rem;padding-top:.9rem;border-top:1px solid var(--border);}
+.ev-card-stat{font-size:.72rem;color:var(--ink-muted);}
+.ev-card-stat strong{display:block;font-size:.95rem;font-weight:700;color:var(--ink);}
+.empty-state{grid-column:1/-1;text-align:center;padding:4rem 2rem;background:var(--white);border-radius:var(--radius-xl);border:2px dashed var(--border);}
+.empty-emoji{font-size:3.5rem;margin-bottom:1rem;}
+.empty-title{font-family:var(--font-display);font-size:1.5rem;color:var(--ink);margin-bottom:.5rem;}
+.empty-sub{font-size:.88rem;color:var(--ink-muted);margin-bottom:1.5rem;}
+
+/* ─────────────── EVENT DETAIL ─────────────── */
+#page-event{background:var(--cream);padding-top:64px;}
+.ev-detail-wrap{max-width:1160px;margin:0 auto;padding:2.5rem 2rem 5rem;}
+.ev-detail-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;gap:1.5rem;flex-wrap:wrap;}
+.ev-breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--ink-muted);margin-bottom:.6rem;cursor:pointer;}
+.ev-breadcrumb:hover{color:var(--gold-dark);}
+.ev-detail-title{font-family:var(--font-display);font-size:2.4rem;color:var(--ink);margin-bottom:.3rem;}
+.ev-detail-meta{font-size:.85rem;color:var(--ink-muted);}
+.ev-detail-actions{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;}
+.ev-stats-row{display:flex;gap:.75rem;margin-bottom:2rem;flex-wrap:wrap;}
+.ev-stat-chip{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1.25rem;display:flex;align-items:center;gap:.75rem;min-width:130px;}
+.ev-stat-icon{font-size:1.25rem;}
+.ev-stat-val{font-size:1.1rem;font-weight:700;color:var(--ink);display:block;}
+.ev-stat-lbl{font-size:.67rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;}
+.ev-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:2rem;}
+.ev-tab{padding:.7rem 1.5rem;font-size:.83rem;font-weight:600;color:var(--ink-muted);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:var(--transition);display:flex;align-items:center;gap:.4rem;}
+.ev-tab.active{color:var(--gold-dark);border-bottom-color:var(--gold);}
+.ev-pane{display:none;}
+.ev-pane.active{display:block;}
+
+/* PHOTO GRID */
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;}
+.photo-item{border-radius:var(--radius-md);overflow:hidden;position:relative;aspect-ratio:1;cursor:pointer;background:var(--cream-dark);}
+.photo-item img{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+.photo-item:hover img{transform:scale(1.05);}
+.photo-item-actions{position:absolute;top:6px;right:6px;opacity:0;transition:var(--transition);display:flex;gap:4px;}
+.photo-item:hover .photo-item-actions{opacity:1;}
+.photo-action{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.78rem;transition:var(--transition);}
+.photo-action:hover{background:var(--white);}
+.photo-guest-tag{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(15,15,14,.65));padding:8px 7px 5px;font-size:.6rem;color:var(--white);font-weight:600;}
+.photo-grid-empty{text-align:center;padding:3rem;color:var(--ink-muted);font-size:.88rem;grid-column:1/-1;}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border-strong);border-radius:var(--radius-xl);padding:3rem 2rem;text-align:center;cursor:pointer;transition:var(--transition);position:relative;}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--gold);background:rgba(184,149,90,.03);}
+.upload-zone-icon{font-size:2.8rem;margin-bottom:.8rem;}
+.upload-zone-title{font-family:var(--font-display);font-size:1.2rem;color:var(--ink);margin-bottom:.4rem;}
+.upload-zone-sub{font-size:.82rem;color:var(--ink-muted);}
+.upload-progress-wrap{margin-top:1.25rem;display:none;}
+.upload-progress-wrap.show{display:block;}
+.upload-progress-track{height:4px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:.5rem;}
+.upload-progress-fill{height:100%;background:var(--gold);border-radius:100px;transition:width .3s;}
+.upload-progress-text{font-size:.75rem;color:var(--ink-muted);}
+
+/* QR PANEL */
+.qr-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2.25rem;display:grid;grid-template-columns:220px 1fr;gap:2.5rem;align-items:start;}
+.qr-visual{display:flex;flex-direction:column;align-items:center;gap:1rem;}
+.qr-visual canvas{border-radius:var(--radius-md);border:1px solid var(--border);}
+.guest-link-wrap{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-md);padding:.75rem 1rem;font-size:.78rem;font-family:monospace;color:var(--ink-muted);word-break:break-all;margin:1rem 0;}
+.qr-info-title{font-family:var(--font-display);font-size:1.3rem;color:var(--ink);margin-bottom:.5rem;}
+.qr-info-sub{font-size:.83rem;color:var(--ink-muted);line-height:1.65;margin-bottom:1.25rem;}
+.qr-actions{display:flex;gap:.6rem;flex-wrap:wrap;}
+.how-to-join{margin-top:1.5rem;padding:1.25rem;background:var(--cream);border-radius:var(--radius-md);border:1px solid var(--border);}
+.how-to-join-title{font-size:.75rem;font-weight:700;color:var(--ink);letter-spacing:.04em;margin-bottom:.6rem;}
+.how-to-join ol{margin-left:1rem;}
+.how-to-join li{font-size:.78rem;color:var(--ink-muted);line-height:1.7;}
+
+/* ─────────────── GUEST PAGE ─────────────── */
+#page-guest{background:var(--cream);min-height:100vh;display:none;flex-direction:column;}
+#page-guest.active{display:flex;}
+.guest-nav{background:var(--ink);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.guest-nav-logo{font-family:var(--font-display);font-size:1.5rem;color:var(--white);}
+.guest-nav-logo em{font-style:italic;color:var(--gold-light);}
+.guest-nav-badge{font-size:.7rem;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.06em;}
+.guest-wrap{flex:1;max-width:680px;margin:0 auto;padding:2rem;width:100%;}
+.guest-event-card{background:linear-gradient(135deg,var(--ink-soft),var(--ink));border-radius:var(--radius-xl);padding:2rem;margin-bottom:1.75rem;display:flex;align-items:center;gap:1.25rem;}
+.guest-event-emoji{font-size:3rem;flex-shrink:0;}
+.guest-event-name{font-family:var(--font-display);font-size:1.5rem;color:var(--white);margin-bottom:.2rem;}
+.guest-event-date{font-size:.8rem;color:rgba(255,255,255,.5);}
+.guest-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-xl);padding:1.75rem;margin-bottom:1.25rem;}
+.guest-card-title{font-family:var(--font-display);font-size:1.15rem;color:var(--ink);margin-bottom:1rem;}
+.guest-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:1rem;}
+.guest-photo{border-radius:var(--radius-md);overflow:hidden;aspect-ratio:1;position:relative;background:var(--cream-dark);cursor:pointer;}
+.guest-photo img{width:100%;height:100%;object-fit:cover;}
+.guest-photo-name{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(15,15,14,.7));padding:8px 7px 5px;font-size:.6rem;color:var(--white);font-weight:600;}
+.guest-realtime{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.realtime-badge{display:flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:600;color:var(--success);}
+.realtime-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+/* ── LIGHTBOX ── */
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:800;display:none;align-items:center;justify-content:center;}
+#lightbox.open{display:flex;}
+#lightbox img{max-width:90vw;max-height:88vh;border-radius:8px;object-fit:contain;}
+.lb-close{position:absolute;top:1.5rem;right:1.5rem;width:42px;height:42px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:50%;color:var(--white);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition);}
+.lb-close:hover{background:rgba(255,255,255,.16);}
+.lb-download{position:absolute;bottom:1.5rem;right:1.5rem;background:var(--gold);color:var(--white);border:none;padding:.6rem 1.35rem;border-radius:100px;font-family:var(--font-body);font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+.lb-download:hover{background:var(--gold-dark);}
+
+
+/* EV MENU */
+.ev-menu{position:relative;display:inline-block;}
+.ev-menu-dd{position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);min-width:180px;z-index:100;display:none;overflow:hidden;}
+.ev-menu-dd.open{display:block;}
+.ev-menu-item{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;font-size:.83rem;color:var(--ink);cursor:pointer;transition:var(--transition);background:none;border:none;width:100%;text-align:left;font-family:var(--font-body);}
+.ev-menu-item:hover{background:var(--cream);}
+.ev-menu-item.danger{color:var(--error);}
+.ev-menu-item.danger:hover{background:#FDF2F2;}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem;}
+.share-option{border:1.5px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;cursor:pointer;transition:var(--transition);}
+.share-option:hover{border-color:var(--gold);background:rgba(184,149,90,.04);}
+.share-option-icon{font-size:1.6rem;margin-bottom:.4rem;}
+.share-option-label{font-size:.78rem;font-weight:600;color:var(--ink);}
+.share-option-sub{font-size:.68rem;color:var(--ink-muted);margin-top:.1rem;}
+.modal-sm{max-width:420px;}
+@keyframes newFlash{0%{box-shadow:0 0 0 0 rgba(184,149,90,.5);}70%{box-shadow:0 0 0 10px rgba(184,149,90,0);}100%{box-shadow:0 0 0 0 rgba(184,149,90,0);}}
+.photo-item.new-photo{animation:newFlash .9s ease;}
+.copy-success{color:var(--success)!important;border-color:var(--success)!important;}
+.ev-photo-count{position:absolute;top:10px;right:10px;background:rgba(15,15,14,.6);color:var(--white);border-radius:100px;padding:.2rem .6rem;font-size:.68rem;font-weight:600;backdrop-filter:blur(4px);}
+/* RESPONSIVE */
+@media(max-width:960px){
+.hero{grid-template-columns:1fr;padding:6rem 1.5rem 4rem;gap:3rem;}
+.hero-visual{display:none;}
+.features-grid{grid-template-columns:1fr 1fr;}
+.how-inner{grid-template-columns:1fr;}
+.gallery-grid{grid-template-columns:1fr 1fr;}.gallery-cell.wide{grid-column:span 1;}.gallery-cell.tall{grid-row:span 1;}
+.lang-cards{grid-template-columns:1fr 1fr;}
+.pricing-grid{grid-template-columns:1fr;}
+.qr-panel{grid-template-columns:1fr;}
+.form-row{grid-template-columns:1fr;}
+section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-section,.cta-section{padding:4.5rem 1.5rem;}
+.nav-inner{padding:0 1.5rem;}
+.dash-wrap,.ev-detail-wrap{padding:2rem 1.5rem 4rem;}
+.ev-card-title{font-size:1.8rem;}
+.photo-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+}
+@media(max-width:600px){
+.features-grid{grid-template-columns:1fr;}
+.lang-cards{grid-template-columns:1fr 1fr;}
+.stats-bar-inner{gap:1.5rem;}
+.ev-stats-row{gap:.5rem;}
+.ev-stat-chip{min-width:100px;padding:.7rem 1rem;}
+.nav-center{display:none;}
+}
 </style>
 </head>
 <body>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+<!-- ═══ LOADING ═══ -->
+<div id="loading-screen">
+  <div class="loading-logo">Lumi<em>ère</em></div>
+  <div class="loading-track"><div class="loading-fill"></div></div>
+</div>
 
-<!-- MODALS -->
-<!-- Create Event Modal -->
-<div class="modal-backdrop" id="modal-create">
+<!-- ═══ TOAST ═══ -->
+<div id="toast-container"></div>
+
+<!-- ═══ LIGHTBOX ═══ -->
+<div id="lightbox">
+  <button class="lb-close" onclick="closeLB()">✕</button>
+  <img id="lb-img" src="" alt="">
+  <button class="lb-download" onclick="dlCurrentPhoto()">⬇ Download</button>
+</div>
+
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="modal-share">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="closeModal('modal-share')">&times;</button>
+    <div class="modal-title">Share Event</div>
+    <div class="modal-sub" id="share-ev-name">Invite guests to your event</div>
+    <div class="share-grid">
+      <div class="share-option" onclick="shareCopy()"><div class="share-option-icon">&#128279;</div><div class="share-option-label">Copy Link</div><div class="share-option-sub">Share anywhere</div></div>
+      <div class="share-option" onclick="shareNative()"><div class="share-option-icon">&#128228;</div><div class="share-option-label">Share</div><div class="share-option-sub">Via your apps</div></div>
+      <div class="share-option" onclick="shareWA()"><div class="share-option-icon">&#128172;</div><div class="share-option-label">WhatsApp</div><div class="share-option-sub">Send message</div></div>
+      <div class="share-option" onclick="shareEmail()"><div class="share-option-icon">&#128231;</div><div class="share-option-label">Email</div><div class="share-option-sub">Send invite</div></div>
+    </div>
+    <div style="background:var(--cream);border-radius:var(--radius-md);padding:.85rem 1rem;font-size:.78rem;font-family:monospace;color:var(--ink-muted);word-break:break-all;border:1px solid var(--border);" id="share-link-display">-</div>
+  </div>
+</div>
+<!-- EDIT EVENT MODAL -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="closeModal('modal-edit')">&times;</button>
+    <div class="modal-title">Edit Event</div>
+    <div class="alert alert-error" id="edit-error"></div>
+    <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Event Name</label><input class="form-input" id="edit-name" type="text"></div>
+    <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Location</label><input class="form-input" id="edit-loc" type="text"></div>
+    <div class="form-field" style="margin-bottom:1.25rem"><label class="form-label">Date</label><input class="form-input" id="edit-date" type="date"></div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-gold btn-xl" onclick="saveEdit()" style="flex:1">Save Changes</button>
+      <button class="btn btn-xl" style="background:rgba(192,57,43,.08);color:var(--error);border:1.5px solid rgba(192,57,43,.2);border-radius:100px;padding:.9rem 1.25rem;cursor:pointer;font-family:var(--font-body);font-weight:500;" onclick="deleteEvent()">Delete</button>
+    </div>
+  </div>
+</div>
+<!-- ═══ AUTH MODAL ═══ -->
+<div class="modal-overlay" id="modal-auth">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-auth')">✕</button>
+    <div class="modal-title">Welcome to Lumière</div>
+    <div class="modal-sub">Create or manage your event galleries</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchAuthTab('signup')">Create Account</button>
+      <button class="modal-tab" onclick="switchAuthTab('login')">Sign In</button>
+    </div>
+    <div class="alert alert-error" id="auth-error"></div>
+    <div class="alert alert-success" id="auth-success"></div>
+    <!-- Signup -->
+    <div class="modal-pane active" id="pane-signup">
+      <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Full Name</label><input class="form-input" id="su-name" type="text" placeholder="Sophie Dupont" autocomplete="name"></div>
+      <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Email Address</label><input class="form-input" id="su-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="form-field" style="margin-bottom:1.25rem"><label class="form-label">Password</label><input class="form-input" id="su-pw" type="password" placeholder="Minimum 6 characters"></div>
+      <button class="btn btn-gold btn-xl" id="btn-signup" onclick="doSignup()" style="width:100%">Create Account</button>
+    </div>
+    <!-- Login -->
+    <div class="modal-pane" id="pane-login">
+      <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Email Address</label><input class="form-input" id="li-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="form-field" style="margin-bottom:1.25rem"><label class="form-label">Password</label><input class="form-input" id="li-pw" type="password" placeholder="Your password" autocomplete="current-password"></div>
+      <button class="btn btn-gold btn-xl" id="btn-login" onclick="doLogin()" style="width:100%">Sign In</button>
+    </div>
+    <div style="margin-top:1.25rem;text-align:center;font-size:.78rem;color:var(--ink-muted)">By continuing you agree to our <a href="#" style="color:var(--gold-dark)">Terms</a> and <a href="#" style="color:var(--gold-dark)">Privacy Policy</a></div>
+  </div>
+</div>
+
+<!-- ═══ CREATE EVENT MODAL ═══ -->
+<div class="modal-overlay" id="modal-create">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-create')">✕</button>
-    <h3 id="modal-title">Create Your Event</h3>
-    <p id="modal-sub">Set up your celebration in under 2 minutes.</p>
-    <div class="modal-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" id="lbl-name">Your Name</label>
-          <input class="form-input" type="text" placeholder="Sophie & Julien">
-        </div>
-        <div class="form-group">
-          <label class="form-label" id="lbl-type">Event Type</label>
-          <select class="form-select" id="event-type-select">
-            <option id="opt-wed">💍 Wedding / Mariage</option>
-            <option id="opt-bday">🎉 Birthday / Anniversaire</option>
-            <option id="opt-party">🥂 Party / Fête</option>
-            <option id="opt-corp">🏢 Corporate / Entreprise</option>
-          </select>
-        </div>
+    <div class="modal-title">New Event</div>
+    <div class="modal-sub">Your private gallery and QR invite code will be ready immediately</div>
+    <div class="alert alert-error" id="create-error"></div>
+    <div class="form-field" style="margin-bottom:.85rem"><label class="form-label">Event Name *</label><input class="form-input" id="cr-name" type="text" placeholder="Sophie & Julien's Wedding"></div>
+    <div class="form-row" style="margin-bottom:.85rem">
+      <div class="form-field"><label class="form-label">Event Type</label>
+        <select class="form-select" id="cr-type">
+          <option value="wedding">💍 Wedding</option><option value="birthday">🎉 Birthday</option>
+          <option value="party">🥂 Party</option><option value="corporate">🏢 Corporate</option><option value="other">🎊 Other</option>
+        </select>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" id="lbl-date">Event Date</label>
-          <input class="form-input" type="date">
-        </div>
-        <div class="form-group">
-          <label class="form-label" id="lbl-lang">Language</label>
-          <select class="form-select">
-            <option>🇬🇧 English</option>
-            <option>🇫🇷 Français</option>
-            <option>🇩🇪 Deutsch</option>
-            <option>🇪🇸 Español</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label" id="lbl-email">Email Address</label>
-        <input class="form-input" type="email" placeholder="you@example.com">
-      </div>
-      <button class="btn-submit" id="btn-submit-create" onclick="submitCreate()">Generate my QR Code ✦</button>
+      <div class="form-field"><label class="form-label">Event Date *</label><input class="form-input" id="cr-date" type="date"></div>
     </div>
+    <div class="form-field" style="margin-bottom:1.25rem"><label class="form-label">Location</label><input class="form-input" id="cr-loc" type="text" placeholder="Château de Vaux, Paris"></div>
+    <button class="btn btn-gold btn-xl" id="btn-create" onclick="doCreateEvent()" style="width:100%">Create Event &amp; Generate QR Code →</button>
   </div>
 </div>
 
-<!-- Video Modal -->
-<div class="modal-backdrop" id="modal-video">
-  <div class="video-modal">
-    <button class="modal-close" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);" onclick="closeModal('modal-video')">✕</button>
-    <div class="video-embed">
-      <img class="video-bg" src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Wedding celebration">
-      <div class="video-play" onclick="showToast('▶ Playing demo video...')">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+<!-- ═══ VIDEO MODAL ═══ -->
+<div class="modal-overlay" id="modal-video">
+  <div class="modal" style="background:var(--ink);max-width:640px;">
+    <button class="modal-close" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);" onclick="closeModal('modal-video')">✕</button>
+    <div style="width:100%;aspect-ratio:16/9;border-radius:var(--radius-lg);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;background:#000;margin-bottom:1.25rem;">
+      <img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=1200" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4;" alt="">
+      <div onclick="toast('▶ Demo video coming soon!')" style="width:72px;height:72px;background:rgba(184,149,90,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;border:2px solid rgba(255,255,255,.2);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="white" style="margin-left:3px"><polygon points="5 3 19 12 5 21"/></svg>
       </div>
     </div>
-    <div class="video-title" id="vid-title">See Lumière in action</div>
-    <div class="video-sub" id="vid-sub">From QR code to shared album — watch the 90-second walkthrough.</div>
+    <div style="font-family:var(--font-display);color:var(--white);font-size:1.3rem;margin-bottom:.4rem;">See Lumière in action</div>
+    <div style="font-size:.83rem;color:rgba(255,255,255,.4);line-height:1.6;">From QR code to shared gallery in under 2 minutes. Real uploads. Real time.</div>
   </div>
 </div>
 
-<!-- Pricing Modal (for mobile) -->
-<div class="modal-backdrop" id="modal-contact">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('modal-contact')">✕</button>
-    <h3 id="contact-title">Get in Touch</h3>
-    <p id="contact-sub">Have a question? Our team usually replies within 2 hours.</p>
-    <div class="modal-form">
-      <div class="form-group">
-        <label class="form-label">Your Name</label>
-        <input class="form-input" type="text" placeholder="Your name">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input class="form-input" type="email" placeholder="you@example.com">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Message</label>
-        <textarea class="form-input" rows="4" style="resize:none" placeholder="Tell us about your event..."></textarea>
-      </div>
-      <button class="btn-submit" onclick="submitContact()">Send message →</button>
+<!-- ═══ NAV ═══ -->
+<nav id="main-nav">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="showPage('home')">Lumi<em>ère</em></div>
+    <div class="nav-center">
+      <button class="lang-pill active" onclick="setLang('en')">EN</button>
+      <button class="lang-pill" onclick="setLang('fr')">FR</button>
+      <button class="lang-pill" onclick="setLang('de')">DE</button>
+      <button class="lang-pill" onclick="setLang('es')">ES</button>
     </div>
-  </div>
-</div>
-
-<!-- NAV -->
-<nav>
-  <div class="logo" onclick="scrollToTop()">Lumi<span>ère</span></div>
-  <div class="nav-center">
-    <button class="lang-btn active" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" onclick="setLang('fr')">FR</button>
-    <button class="lang-btn" onclick="setLang('de')">DE</button>
-    <button class="lang-btn" onclick="setLang('es')">ES</button>
-  </div>
-  <div class="nav-right">
-    <button class="nav-link" id="nav-features" onclick="scrollTo('features')">Features</button>
-    <button class="nav-link" id="nav-pricing" onclick="scrollTo('pricing')">Pricing</button>
-    <button class="nav-link" id="nav-contact" onclick="openModal('modal-contact')">Contact</button>
-    <button class="nav-cta" id="nav-cta-btn" onclick="openModal('modal-create')">Create Event →</button>
+    <div class="nav-right">
+      <button class="nav-text-link" onclick="scrollTo('features')" id="nav-features">Features</button>
+      <button class="nav-text-link" onclick="scrollTo('pricing')" id="nav-pricing">Pricing</button>
+      <button class="btn btn-primary btn-md" id="nav-cta" onclick="requireAuth(()=>openModal('modal-create'))" style="display:flex">Create Event</button>
+      <div class="nav-user" id="nav-user">
+        <button class="btn btn-ghost btn-md" onclick="showPage('dashboard')" id="nav-dash-btn">My Events</button>
+        <div class="nav-avatar" id="nav-avatar" onclick="doLogout()" title="Log out">?</div>
+      </div>
+    </div>
   </div>
 </nav>
 
-<!-- HERO -->
-<section class="hero" id="home">
-  <div class="hero-bg">
-    <img src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="">
-  </div>
-  <div class="hero-text">
-    <div class="hero-eyebrow"><span id="eyebrow-text">For Weddings · Fêtes · Fiestas · Feste</span></div>
-    <h1 class="fade-up" id="hero-title">Every moment,<br><em>shared forever.</em></h1>
-    <p class="hero-sub fade-up-2" id="hero-sub">Lumière lets your guests capture, share, and relive every magical moment — in real time, in their language, across Europe and beyond.</p>
-    <div class="hero-actions fade-up-3">
-      <button class="btn-primary" onclick="openModal('modal-create')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-        <span id="hero-cta">Start Free Today</span>
-      </button>
-      <button class="btn-ghost" onclick="openModal('modal-video')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
-        <span id="hero-cta2">See how it works</span>
-      </button>
-    </div>
-    <div class="hero-flags fade-up-4">
-      <span id="available-in">Available in:</span>
-      <div class="flag">🇫🇷</div><div class="flag">🇩🇪</div><div class="flag">🇪🇸</div><div class="flag">🇺🇸</div>
-    </div>
-  </div>
+<!-- ════════════════════════════════
+     HOME PAGE
+════════════════════════════════ -->
+<div class="page active" id="page-home">
 
-  <div class="hero-visual">
-    <!-- Floating cards -->
-    <div class="floating-card card-guests">
-      <div class="guest-avatars">
-        <div class="avatar av-1">M</div>
-        <div class="avatar av-2">L</div>
-        <div class="avatar av-3">S</div>
-        <div class="avatar av-more">+84</div>
-      </div>
-      <div class="guests-text"><span class="guests-count">87 guests</span>connected</div>
-    </div>
-    <div class="floating-card card-upload">
-      <div class="upload-row">
-        <div class="upload-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
-        <div class="upload-text"><div class="upload-label">New photo shared</div><div class="upload-meta">247 photos · just now</div></div>
-      </div>
-    </div>
-
-    <!-- Phone mockup -->
-    <div class="phone-frame">
-      <div class="phone-notch"></div>
-      <div class="phone-screen">
-        <div class="app-header">
-          <div class="app-header-title">Lumière ✦</div>
-          <div class="app-header-icon"><svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></div>
+  <!-- HERO -->
+  <div style="max-width:1160px;margin:0 auto;">
+    <div class="hero">
+      <div class="hero-text">
+        <div class="hero-kicker"><div class="hero-kicker-line"></div><div class="hero-kicker-text" id="eyebrow-text">Weddings · Fêtes · Fiestas · Feste</div></div>
+        <div class="display-xl hero-title" id="hero-title">Every moment,<br><em class="serif">shared forever.</em></div>
+        <p class="hero-body" id="hero-sub">Lumière lets your guests capture, share, and relive every magical moment — in real time, in their own language, across Europe and beyond.</p>
+        <div class="hero-actions">
+          <button class="btn btn-gold btn-xl" onclick="requireAuth(()=>openModal('modal-create'))"><span id="hero-cta">Start Free Today</span></button>
+          <button class="btn btn-outline btn-xl" onclick="openModal('modal-video')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
+            <span id="hero-cta2">See how it works</span>
+          </button>
         </div>
-        <div class="app-event-banner">
-          <div class="event-thumbnail"><img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=80" alt="event"></div>
-          <div style="flex:1">
-            <div class="event-name" id="phone-event-name">Sophie &amp; Julien</div>
-            <div class="event-meta"><span id="phone-event-date">14 juin 2025</span><span>Château de Vaux</span></div>
-          </div>
-          <div class="event-badge">LIVE</div>
-        </div>
-        <div class="app-photos-grid">
-          <div class="photo-cell"><img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=200" alt="wedding"><div class="photo-overlay"><div class="photo-heart">♥ 31</div></div></div>
-          <div class="photo-cell"><img src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=200" alt="celebration"><div class="photo-overlay"><div class="photo-heart">♥ 12</div></div></div>
-          <div class="photo-cell"><img src="https://images.pexels.com/photos/1535288/pexels-photo-1535288.jpeg?auto=compress&cs=tinysrgb&w=200" alt="party"><div class="photo-overlay"><div class="photo-heart">♥ 8</div></div></div>
-          <div class="photo-cell"><img src="https://images.pexels.com/photos/3171837/pexels-photo-3171837.jpeg?auto=compress&cs=tinysrgb&w=200" alt="wedding couple"><div class="photo-overlay"><div class="photo-heart">♥ 44</div></div></div>
-          <div class="photo-cell"><img src="https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=200" alt="guests"><div class="photo-overlay"><div class="photo-heart">♥ 19</div></div></div>
-          <div class="photo-cell"><img src="https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=200" alt="floral"><div class="photo-overlay"><div class="photo-heart">♥ 5</div></div></div>
-        </div>
-        <div class="app-bottom-bar">
-          <div class="tab-item active"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div class="tab-label" style="color:var(--gold)">Gallery</div></div>
-          <div class="tab-item"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6560" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="tab-label">Event</div></div>
-          <div class="tab-item"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6560" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div class="tab-label">Chat</div></div>
-          <div class="tab-item"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6560" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="tab-label">Profile</div></div>
+        <div class="hero-trust">
+          <div class="hero-trust-flags">🇫🇷 🇩🇪 🇪🇸 🇺🇸</div>
+          <div class="hero-trust-text" id="available-in">Available in 4 languages · GDPR compliant · Free to start</div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section class="features" id="features">
-  <div class="features-header">
-    <div class="section-eyebrow">Why Lumière</div>
-    <h2>Built for <em>European</em> celebrations</h2>
-    <p class="section-sub">From Parisian weddings to Andalusian fiestas, Bavarian festivals to New York parties — one elegant platform.</p>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-      <div class="feature-title">Instant Photo Sharing</div>
-      <div class="feature-desc">Guests scan a QR code and start uploading instantly — no app download required. Photos appear in the shared album in real time.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg></div>
-      <div class="feature-title">POV Story Reels</div>
-      <div class="feature-desc">Guests record 15-second POV moments that auto-compile into a cinematic event reel — every perspective, one story.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg></div>
-      <div class="feature-title">4-Language Native UI</div>
-      <div class="feature-desc">Full native support in French, German, Spanish, and English. Guests interact in their own language — automatically detected.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-      <div class="feature-title">Guest Management</div>
-      <div class="feature-desc">Invite lists, RSVP tracking, table assignments. Send digital invitations in multiple languages from one dashboard.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-      <div class="feature-title">GDPR-First Privacy</div>
-      <div class="feature-desc">Built for Europe. Data stored on EU servers, full GDPR compliance, photos auto-delete after your chosen retention period.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-      <div class="feature-title">Printed Memories</div>
-      <div class="feature-desc">Order premium photo books, wall prints, or digital keepsake albums — delivered anywhere in Europe within 5 days.</div>
-    </div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section id="how">
-  <div class="how-wrapper">
-    <div>
-      <div class="section-eyebrow">Simple by design</div>
-      <h2>From invite to<br><em>keepsake</em> in minutes</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-content">
-            <h3 id="step1-title">Create your event</h3>
-            <p id="step1-desc">Set up your celebration in under 2 minutes. Choose your languages, event date, and style. Lumière generates a personalised QR code instantly.</p>
+      <div class="hero-visual">
+        <div class="float-card float-guests">
+          <div class="float-avatars"><div class="f-av f-av-1">M</div><div class="f-av f-av-2">L</div><div class="f-av f-av-3">S</div><div class="f-av f-av-more">+84</div></div>
+          <div class="float-guests-info"><span class="float-guests-count">87 guests</span>connected live</div>
+        </div>
+        <div class="float-card float-upload">
+          <div class="float-upload-row">
+            <div class="float-upload-icon"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+            <div class="float-upload-text"><div class="float-upload-label">New photo uploaded</div><div class="float-upload-meta">247 photos · just now</div></div>
           </div>
         </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-content">
-            <h3 id="step2-title">Guests join effortlessly</h3>
-            <p id="step2-desc">No app download needed. Guests scan the QR code, pick their language, and start capturing moments immediately from their phones.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-content">
-            <h3 id="step3-title">Relive every moment</h3>
-            <p id="step3-desc">After the event, your private gallery is ready — photos, videos, and POV reels from every guest's perspective. Order prints or download everything.</p>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:2rem">
-        <button class="btn-primary" onclick="openModal('modal-create')" id="how-cta-btn">Get started free →</button>
-      </div>
-    </div>
-    <div>
-      <div class="phone-frame-2">
-        <div class="phone-screen-2">
-          <div class="invite-header">
-            <div class="invite-qr" id="qr-grid"></div>
-            <div class="invite-name" id="invite-event-name">Sophie &amp; Julien ✦</div>
-            <div class="invite-date" id="invite-event-date">14 June 2025 · Château de Vaux, Paris</div>
-          </div>
-          <div class="invite-body">
-            <div class="invite-stat">
-              <div class="stat-icon" style="background:#F5EDD8">📸</div>
-              <div><div class="stat-label" id="stat1-label">Photos shared</div><div class="stat-val">247</div></div>
+        <div class="phone-shell">
+          <div class="phone-island"></div>
+          <div class="phone-screen">
+            <div class="ps-header"><div class="ps-logo">Lumière ✦</div><div class="ps-live"><div class="ps-live-dot"></div>Live</div></div>
+            <div class="ps-event">
+              <div class="ps-thumb"><img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=80" alt=""></div>
+              <div><div class="ps-event-name">Sophie &amp; Julien</div><div class="ps-event-meta">14 juin 2025 · Paris</div></div>
             </div>
-            <div class="invite-stat">
-              <div class="stat-icon" style="background:#E8F0E0">👥</div>
-              <div><div class="stat-label" id="stat2-label">Guests connected</div><div class="stat-val">87 / 120</div></div>
+            <div class="ps-grid">
+              <div class="ps-photo"><img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=200" alt=""><div class="ps-like">♥ 31</div></div>
+              <div class="ps-photo"><img src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=200" alt=""><div class="ps-like">♥ 12</div></div>
+              <div class="ps-photo"><img src="https://images.pexels.com/photos/1535288/pexels-photo-1535288.jpeg?auto=compress&cs=tinysrgb&w=200" alt=""><div class="ps-like">♥ 8</div></div>
+              <div class="ps-photo"><img src="https://images.pexels.com/photos/3171837/pexels-photo-3171837.jpeg?auto=compress&cs=tinysrgb&w=200" alt=""><div class="ps-like">♥ 44</div></div>
+              <div class="ps-photo"><img src="https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=200" alt=""><div class="ps-like">♥ 19</div></div>
+              <div class="ps-photo"><img src="https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=200" alt=""><div class="ps-like">♥ 5</div></div>
             </div>
-            <div class="invite-stat">
-              <div class="stat-icon" style="background:#EDE8F5">🎬</div>
-              <div><div class="stat-label" id="stat3-label">POV clips</div><div class="stat-val">34 moments</div></div>
+            <div class="ps-bar">
+              <div class="ps-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="#B8955A" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><div class="ps-tab-label" style="color:var(--gold)">Gallery</div></div>
+              <div class="ps-tab"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6660" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/></svg><div class="ps-tab-label">Event</div></div>
+              <div class="ps-tab"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6660" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><div class="ps-tab-label">Chat</div></div>
+              <div class="ps-tab"><svg viewBox="0 0 24 24" fill="none" stroke="#6B6660" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div class="ps-tab-label">Profile</div></div>
             </div>
-            <button class="share-btn-inner" id="share-btn-txt" onclick="showToast('📸 Opening camera...')">Share your moment ↑</button>
           </div>
         </div>
       </div>
     </div>
   </div>
-</section>
 
-<!-- GALLERY -->
-<section class="gallery-section" id="gallery">
-  <div class="section-eyebrow">Real moments</div>
-  <h2>Every celebration, <em>beautifully captured</em></h2>
-  <p class="section-sub">Real photos from events across Europe — weddings, birthdays, and everything in between.</p>
-  <div class="gallery-grid">
-    <div class="gallery-item tall" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Wedding celebration">
-      <div class="gallery-overlay"><span class="gallery-tag">💍 Wedding · Paris</span></div>
-    </div>
-    <div class="gallery-item" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Party celebration">
-      <div class="gallery-overlay"><span class="gallery-tag">🥂 Fête · Lyon</span></div>
-    </div>
-    <div class="gallery-item" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/3171837/pexels-photo-3171837.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Couple">
-      <div class="gallery-overlay"><span class="gallery-tag">💑 Boda · Sevilla</span></div>
-    </div>
-    <div class="gallery-item" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Guests">
-      <div class="gallery-overlay"><span class="gallery-tag">🎊 Fest · München</span></div>
-    </div>
-    <div class="gallery-item wide" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/1535288/pexels-photo-1535288.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Celebration">
-      <div class="gallery-overlay"><span class="gallery-tag">🎉 Birthday · Berlin</span></div>
-    </div>
-    <div class="gallery-item" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Flowers">
-      <div class="gallery-overlay"><span class="gallery-tag">🌸 Mariage · Bordeaux</span></div>
-    </div>
-    <div class="gallery-item tall" onclick="showToast('🖼 Opening gallery...')">
-      <img src="https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Reception">
-      <div class="gallery-overlay"><span class="gallery-tag">🎶 Reception · Rome</span></div>
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stats-bar-inner">
+      <div class="stat-item"><div class="stat-num">12k+</div><div class="stat-lbl">Events Created</div></div>
+      <div class="stat-item"><div class="stat-num">480k+</div><div class="stat-lbl">Photos Shared</div></div>
+      <div class="stat-item"><div class="stat-num">4</div><div class="stat-lbl">Languages</div></div>
+      <div class="stat-item"><div class="stat-num">100%</div><div class="stat-lbl">GDPR Compliant</div></div>
     </div>
   </div>
-</section>
 
-<!-- LANGUAGES -->
-<section class="languages-section" id="languages">
-  <div class="section-eyebrow" style="justify-content:center">Multi-language</div>
-  <h2>One app, <em>four cultures</em></h2>
-  <p class="section-sub">Lumière speaks your guests' language — naturally, beautifully, and without any friction.</p>
-  <div class="lang-cards">
-    <div class="lang-card" onclick="setLang('fr'); showToast('🇫🇷 Switched to Français');">
-      <span class="lang-flag">🇫🇷</span>
-      <div class="lang-name">Français</div>
-      <div class="lang-tagline">"Partagez chaque instant"</div>
-      <div class="lang-ui-preview"><strong>Créer un événement</strong><br>Mariage · Anniversaire · Soirée<br><strong>Inviter vos convives →</strong></div>
+  <!-- FEATURES -->
+  <section class="features-section" id="features">
+    <div class="features-header">
+      <div class="label" style="margin-bottom:.75rem">Why Lumière</div>
+      <div class="display-lg" style="margin-bottom:.75rem">Built for <em class="serif">European</em> celebrations</div>
+      <p class="body-lg" style="max-width:540px;margin:0 auto">Real photo uploads. Live shared gallery. QR code invites. No app install — ever.</p>
     </div>
-    <div class="lang-card" onclick="setLang('de'); showToast('🇩🇪 Auf Deutsch gewechselt');">
-      <span class="lang-flag">🇩🇪</span>
-      <div class="lang-name">Deutsch</div>
-      <div class="lang-tagline">"Jeden Moment teilen"</div>
-      <div class="lang-ui-preview"><strong>Event erstellen</strong><br>Hochzeit · Geburtstag · Feier<br><strong>Gäste einladen →</strong></div>
+    <div class="features-grid">
+      <div class="feature-tile"><div class="feature-icon-wrap"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="feature-name">Real Photo Uploads</div><div class="feature-desc">Guests upload photos directly from their phone browser. Stored securely, visible to everyone in real time.</div></div>
+      <div class="feature-tile"><div class="feature-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div><div class="feature-name">QR Code Invites</div><div class="feature-desc">Every event gets a unique QR code. Guests scan with their camera — no app, no account, zero friction.</div></div>
+      <div class="feature-tile"><div class="feature-icon-wrap"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="feature-name">Live Shared Gallery</div><div class="feature-desc">Photos appear the moment they're uploaded. Every guest sees the album grow together, in real time.</div></div>
+      <div class="feature-tile"><div class="feature-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20"/></svg></div><div class="feature-name">4-Language UI</div><div class="feature-desc">French, German, Spanish, English — the full interface switches instantly. Guests use their own language.</div></div>
+      <div class="feature-tile"><div class="feature-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="feature-name">GDPR-First Privacy</div><div class="feature-desc">Built for Europe. EU servers, full GDPR compliance. Your guests' data stays private and secure.</div></div>
+      <div class="feature-tile"><div class="feature-icon-wrap"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="feature-name">Download Everything</div><div class="feature-desc">One-click download of every photo from every guest. All your memories, forever yours to keep.</div></div>
     </div>
-    <div class="lang-card" onclick="setLang('es'); showToast('🇪🇸 Cambiado a Español');">
-      <span class="lang-flag">🇪🇸</span>
-      <div class="lang-name">Español</div>
-      <div class="lang-tagline">"Comparte cada momento"</div>
-      <div class="lang-ui-preview"><strong>Crear tu evento</strong><br>Boda · Cumpleaños · Fiesta<br><strong>Invitar invitados →</strong></div>
-    </div>
-    <div class="lang-card" onclick="setLang('en'); showToast('🇺🇸 Switched to English');">
-      <span class="lang-flag">🇺🇸</span>
-      <div class="lang-name">English</div>
-      <div class="lang-tagline">"Share every moment"</div>
-      <div class="lang-ui-preview"><strong>Create your event</strong><br>Wedding · Birthday · Party<br><strong>Invite your guests →</strong></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- EVENTS -->
-<section id="events">
-  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;margin-bottom:0">
-    <div>
-      <div class="section-eyebrow">Made for every occasion</div>
-      <h2>Every event, <em>perfectly captured</em></h2>
-    </div>
-    <button class="btn-primary" onclick="showToast('🗓 Loading all events...')">Browse all events →</button>
-  </div>
-  <div class="events-grid">
-    <div class="event-card" onclick="showToast('💍 Opening Sophie & Julien's album...')">
-      <div class="event-cover">
-        <img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=700" alt="Wedding">
-        <div class="event-cover-overlay"><span class="event-cover-tag">Mariage · Wedding</span></div>
+  <!-- HOW IT WORKS -->
+  <div class="how-section">
+    <div class="how-inner">
+      <div>
+        <div class="how-label" id="how-label">Simple by design</div>
+        <div class="how-title" id="how-title">From invite to<br><em>keepsake</em><br>in 2 minutes</div>
+        <div class="how-steps">
+          <div class="how-step"><div class="how-step-num">1</div><div><div class="how-step-title" id="step1-title">Create your event</div><div class="how-step-desc" id="step1-desc">Sign up free, name your event, set the date. A unique QR code and private gallery URL are generated instantly.</div></div></div>
+          <div class="how-step"><div class="how-step-num">2</div><div><div class="how-step-title" id="step2-title">Guests join effortlessly</div><div class="how-step-desc" id="step2-desc">Share the QR code. Guests scan it, enter their name, and start uploading photos. No app download ever required.</div></div></div>
+          <div class="how-step"><div class="how-step-num">3</div><div><div class="how-step-title" id="step3-title">Relive every moment</div><div class="how-step-desc" id="step3-desc">Every photo is in your dashboard. Download the full album, share the gallery link, or browse by guest.</div></div></div>
+        </div>
+        <div style="margin-top:2rem"><button class="btn btn-gold btn-xl" onclick="requireAuth(()=>openModal('modal-create'))" id="how-cta">Get started free →</button></div>
       </div>
-      <div class="event-body">
-        <h3>Sophie &amp; Julien</h3>
-        <div class="event-body-meta"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>14 juin 2025 · Paris, France</div>
-        <div class="event-stats"><div class="e-stat"><strong>247</strong>photos</div><div class="e-stat"><strong>87</strong>guests</div><div class="e-stat"><strong>34</strong>clips</div></div>
-      </div>
-    </div>
-    <div class="event-card" onclick="showToast('🎉 Opening Karl\'s Fest album...')">
-      <div class="event-cover">
-        <img src="https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=700" alt="Birthday">
-        <div class="event-cover-overlay"><span class="event-cover-tag">Geburtstag · Birthday</span></div>
-      </div>
-      <div class="event-body">
-        <h3>Karl's 40th Fest</h3>
-        <div class="event-body-meta"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>3 Juli 2025 · München, Deutschland</div>
-        <div class="event-stats"><div class="e-stat"><strong>183</strong>photos</div><div class="e-stat"><strong>64</strong>guests</div><div class="e-stat"><strong>21</strong>clips</div></div>
-      </div>
-    </div>
-    <div class="event-card" onclick="showToast('🌹 Opening Ana & Miguel\'s album...')">
-      <div class="event-cover">
-        <img src="https://images.pexels.com/photos/3171837/pexels-photo-3171837.jpeg?auto=compress&cs=tinysrgb&w=700" alt="Spanish Wedding">
-        <div class="event-cover-overlay"><span class="event-cover-tag">Boda · Wedding</span></div>
-      </div>
-      <div class="event-body">
-        <h3>Ana &amp; Miguel</h3>
-        <div class="event-body-meta"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>22 Sept 2025 · Sevilla, España</div>
-        <div class="event-stats"><div class="e-stat"><strong>312</strong>photos</div><div class="e-stat"><strong>118</strong>guests</div><div class="e-stat"><strong>52</strong>clips</div></div>
+      <div class="how-visual">
+        <div class="how-visual-emoji">📸</div>
+        <div class="how-visual-title">Real uploads. Real memories.</div>
+        <div class="how-visual-sub">Photos saved to the cloud. Live gallery for all guests. You own everything — forever.</div>
+        <div class="how-chips">
+          <div class="how-chip">✓ No app install</div>
+          <div class="how-chip">✓ Real-time sync</div>
+          <div class="how-chip">✓ GDPR compliant</div>
+          <div class="how-chip">✓ Free to start</div>
+          <div class="how-chip">✓ EU servers</div>
+        </div>
       </div>
     </div>
   </div>
-</section>
 
-<!-- PRICING -->
-<section class="pricing-section" id="pricing">
-  <div style="max-width:560px;margin-bottom:0">
-    <div class="section-eyebrow" style="color:rgba(201,169,110,.7)">Simple pricing</div>
-    <h2>Plans for every <em>celebration</em></h2>
-    <p class="section-sub">Free to start. Upgrade only when you need more guests or features. Cancel anytime.</p>
-  </div>
-  <div class="pricing-grid">
-    <!-- Free -->
-    <div class="price-card">
-      <div class="price-name">Gratuit · Free</div>
-      <div class="price-amount">€0<span>/event</span></div>
-      <div class="price-sub">Perfect for small gatherings</div>
-      <ul class="price-features">
-        <li class="on">Up to 30 guests</li>
-        <li class="on">100 photos per event</li>
-        <li class="on">QR code sharing</li>
-        <li class="on">4 languages</li>
-        <li class="off">POV video reels</li>
-        <li class="off">Print ordering</li>
-        <li class="off">Custom branding</li>
-      </ul>
-      <button class="btn-price btn-price-outline" onclick="openModal('modal-create')">Start free →</button>
+  <!-- GALLERY -->
+  <section class="gallery-section">
+    <div class="label" style="margin-bottom:.6rem;text-align:center">Real moments</div>
+    <div class="display-lg" style="text-align:center;margin-bottom:.6rem">Every celebration, <em class="serif">beautifully captured</em></div>
+    <div class="gallery-grid">
+      <div class="gallery-cell tall"><img src="https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Wedding Paris"><div class="gallery-overlay"><span class="gallery-tag">💍 Wedding · Paris</span></div></div>
+      <div class="gallery-cell"><img src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Party Lyon"><div class="gallery-overlay"><span class="gallery-tag">🥂 Fête · Lyon</span></div></div>
+      <div class="gallery-cell"><img src="https://images.pexels.com/photos/3171837/pexels-photo-3171837.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Boda Sevilla"><div class="gallery-overlay"><span class="gallery-tag">💑 Boda · Sevilla</span></div></div>
+      <div class="gallery-cell"><img src="https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Fest München"><div class="gallery-overlay"><span class="gallery-tag">🎊 Fest · München</span></div></div>
+      <div class="gallery-cell wide"><img src="https://images.pexels.com/photos/1535288/pexels-photo-1535288.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Birthday Berlin"><div class="gallery-overlay"><span class="gallery-tag">🎉 Birthday · Berlin</span></div></div>
+      <div class="gallery-cell"><img src="https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Mariage Bordeaux"><div class="gallery-overlay"><span class="gallery-tag">🌸 Mariage · Bordeaux</span></div></div>
+      <div class="gallery-cell tall"><img src="https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Reception Rome"><div class="gallery-overlay"><span class="gallery-tag">🎶 Reception · Rome</span></div></div>
     </div>
-    <!-- Pro -->
-    <div class="price-card featured">
-      <div class="price-badge">Most popular</div>
-      <div class="price-name">Pro · Professionnel</div>
-      <div class="price-amount">€29<span>/event</span></div>
-      <div class="price-sub">For weddings &amp; big celebrations</div>
-      <ul class="price-features">
-        <li class="on">Up to 300 guests</li>
-        <li class="on">Unlimited photos</li>
-        <li class="on">QR code sharing</li>
-        <li class="on">4 languages</li>
-        <li class="on">POV video reels</li>
-        <li class="on">Print ordering</li>
-        <li class="off">Custom branding</li>
-      </ul>
-      <button class="btn-price btn-price-gold" onclick="openModal('modal-create')">Get Pro →</button>
+  </section>
+
+  <!-- LANGUAGES -->
+  <section class="lang-section">
+    <div style="text-align:center;margin-bottom:0">
+      <div class="label" style="margin-bottom:.6rem">Multi-language</div>
+      <div class="display-lg" style="margin-bottom:.6rem">One app, <em class="serif">four cultures</em></div>
+      <p class="body-lg" style="margin:0 auto;max-width:480px">Click a language card to switch the entire interface instantly. Your guests always interact in their own language.</p>
     </div>
-    <!-- Elite -->
-    <div class="price-card">
-      <div class="price-name">Elite · Prestige</div>
-      <div class="price-amount">€79<span>/event</span></div>
-      <div class="price-sub">For venues &amp; event planners</div>
-      <ul class="price-features">
-        <li class="on">Unlimited guests</li>
-        <li class="on">Unlimited photos</li>
-        <li class="on">QR code sharing</li>
-        <li class="on">4 languages</li>
-        <li class="on">POV video reels</li>
-        <li class="on">Print ordering</li>
-        <li class="on">Custom branding</li>
-      </ul>
-      <button class="btn-price btn-price-outline" onclick="openModal('modal-contact')">Contact us →</button>
+    <div class="lang-cards">
+      <div class="lang-card active-lang" id="lc-en" onclick="setLang('en');toast('🇺🇸 Switched to English')"><span class="lang-flag">🇺🇸</span><div class="lang-name">English</div><div class="lang-tagline">"Share every moment"</div><div class="lang-preview"><strong>Create your event</strong><br>Wedding · Birthday · Party</div></div>
+      <div class="lang-card" id="lc-fr" onclick="setLang('fr');toast('🇫🇷 Switched to Français')"><span class="lang-flag">🇫🇷</span><div class="lang-name">Français</div><div class="lang-tagline">"Partagez chaque instant"</div><div class="lang-preview"><strong>Créer un événement</strong><br>Mariage · Anniversaire · Soirée</div></div>
+      <div class="lang-card" id="lc-de" onclick="setLang('de');toast('🇩🇪 Auf Deutsch gewechselt')"><span class="lang-flag">🇩🇪</span><div class="lang-name">Deutsch</div><div class="lang-tagline">"Jeden Moment teilen"</div><div class="lang-preview"><strong>Event erstellen</strong><br>Hochzeit · Geburtstag · Feier</div></div>
+      <div class="lang-card" id="lc-es" onclick="setLang('es');toast('🇪🇸 Cambiado a Español')"><span class="lang-flag">🇪🇸</span><div class="lang-name">Español</div><div class="lang-tagline">"Comparte cada momento"</div><div class="lang-preview"><strong>Crear tu evento</strong><br>Boda · Cumpleaños · Fiesta</div></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section" id="pricing">
+    <div style="text-align:center;max-width:540px;margin:0 auto">
+      <div class="label" style="margin-bottom:.6rem">Simple pricing</div>
+      <div class="display-lg" style="margin-bottom:.6rem">Plans for every <em class="serif">celebration</em></div>
+      <p class="body-lg">Free to start. No credit card required.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card"><div class="price-tier">Free</div><div class="price-amount">€0</div><div class="price-period">per event</div><div class="price-desc">Perfect for small gatherings and intimate celebrations</div><ul class="price-features"><li class="on">Up to 30 guests</li><li class="on">100 photos per event</li><li class="on">QR code + live gallery</li><li class="on">4 languages</li><li class="off">Bulk photo download</li><li class="off">Print ordering</li></ul><button class="btn btn-outline btn-xl" onclick="requireAuth(()=>openModal('modal-create'))" style="width:100%">Start free</button></div>
+      <div class="price-card featured"><div class="price-pill">Most popular</div><div class="price-tier">Pro</div><div class="price-amount">€29</div><div class="price-period">per event</div><div class="price-desc">For weddings and large celebrations with many guests</div><ul class="price-features"><li class="on">Unlimited guests</li><li class="on">Unlimited photos</li><li class="on">QR code + live gallery</li><li class="on">4 languages</li><li class="on">Bulk photo download</li><li class="off">Print ordering</li></ul><button class="btn btn-gold btn-xl" onclick="requireAuth(()=>openModal('modal-create'))" style="width:100%">Get Pro</button></div>
+      <div class="price-card"><div class="price-tier">Elite</div><div class="price-amount">€79</div><div class="price-period">per event</div><div class="price-desc">For venues, wedding planners and corporate events</div><ul class="price-features"><li class="on">Unlimited guests</li><li class="on">Unlimited photos</li><li class="on">QR code + live gallery</li><li class="on">4 languages</li><li class="on">Bulk photo download</li><li class="on">Print ordering + branding</li></ul><button class="btn btn-outline btn-xl" onclick="openModal('modal-auth')" style="width:100%">Contact us</button></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <div class="cta-inner">
+      <div class="cta-title" id="cta-title">Your celebration<br>deserves <em>Lumière</em></div>
+      <p class="cta-sub" id="cta-sub">Free to start. Real photo uploads. Live gallery for all guests. GDPR compliant. EU servers.</p>
+      <div class="cta-btns">
+        <button class="btn btn-gold btn-xl" onclick="requireAuth(()=>openModal('modal-create'))" id="cta-btn">Create your event free →</button>
+        <button class="btn btn-xl" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.12);" onclick="scrollTo('pricing')">See pricing</button>
+      </div>
     </div>
   </div>
-</section>
 
-<!-- CTA -->
-<section class="cta-section" id="cta">
-  <div class="section-eyebrow" style="justify-content:center;color:rgba(201,169,110,.65)">Start today</div>
-  <h2 id="cta-title">Your celebration<br>deserves <em>Lumière</em></h2>
-  <p class="section-sub" id="cta-sub">Free to start. No credit card. Available in French, German, Spanish &amp; English. GDPR compliant. EU servers.</p>
-  <div class="cta-buttons">
-    <button class="btn-gold" id="cta-btn1" onclick="openModal('modal-create')">Create your event free →</button>
-    <button class="btn-outline-light" id="cta-btn2" onclick="scrollTo('pricing')">See pricing</button>
+  <div class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-logo" onclick="showPage('home')">Lumi<em>ère</em></div>
+      <div class="footer-links"><a href="#" onclick="toast('Privacy Policy')">Privacy</a><a href="#" onclick="toast('GDPR Policy')">GDPR</a><a href="#" onclick="toast('Terms of Service')">Terms</a><a href="#" onclick="openModal('modal-auth')">Contact</a></div>
+      <div class="footer-copy">© 2025 Lumière · Made in Europe 🇪🇺</div>
+    </div>
   </div>
-</section>
+</div>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo" onclick="scrollToTop()">Lumi<span>ère</span></div>
-  <div class="footer-links">
-    <a href="#" onclick="showToast('Privacy policy loading...')">Privacy</a>
-    <a href="#" onclick="showToast('GDPR policy loading...')">GDPR</a>
-    <a href="#" onclick="showToast('Terms of service loading...')">Terms</a>
-    <a href="#" onclick="openModal('modal-contact')">Contact</a>
-    <a href="#" onclick="showToast('Press kit loading...')">Press</a>
+<!-- ════════════════════════════════
+     DASHBOARD
+════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="dash-wrap">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title">My Events</div>
+        <div class="dash-subtitle" id="dash-sub">Your celebrations, all in one place</div>
+      </div>
+      <button class="btn btn-gold btn-xl" onclick="openModal('modal-create')">+ New Event</button>
+    </div>
+    <div class="events-grid" id="events-grid">
+      <div class="empty-state"><div class="empty-emoji">✨</div><div class="empty-title">Loading your events...</div></div>
+    </div>
   </div>
-  <div class="footer-copy">© 2025 Lumière. Made in Europe 🇪🇺</div>
-</footer>
+</div>
+
+<!-- ════════════════════════════════
+     EVENT DETAIL
+════════════════════════════════ -->
+<div class="page" id="page-event">
+  <div class="ev-detail-wrap">
+    <div class="ev-detail-top">
+      <div>
+        <div class="ev-breadcrumb" onclick="showPage('dashboard')">← My Events</div>
+        <div class="ev-detail-title" id="ev-title">Event Name</div>
+        <div class="ev-detail-meta" id="ev-meta"></div>
+      </div>
+      <div class="ev-detail-actions">
+        <div class="badge badge-live"><div class="badge-dot"></div> Live</div>
+        <button class="btn btn-outline btn-md" onclick="shareInvite()">📤 Share Invite</button>
+        <button class="btn btn-gold btn-md" onclick="openModal('modal-create')">+ New Event</button>
+        <div class="ev-menu" id="ev-menu">
+          <button class="btn btn-ghost btn-md" onclick="toggleEvMenu(event)">&#8943; Manage</button>
+          <div class="ev-menu-dd" id="ev-menu-dd">
+            <button class="ev-menu-item" onclick="openEditEvent()">&#9998; Edit Event</button>
+            <button class="ev-menu-item" onclick="openShareModal()">&#128228; Share Invite</button>
+            <button class="ev-menu-item" onclick="downloadQR()">&#8679; Download QR</button>
+            <button class="ev-menu-item danger" onclick="deleteEvent()">&#128465; Delete Event</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev-stats-row">
+      <div class="ev-stat-chip"><div class="ev-stat-icon">📸</div><div><span class="ev-stat-val" id="stat-photos">0</span><span class="ev-stat-lbl">Photos</span></div></div>
+      <div class="ev-stat-chip"><div class="ev-stat-icon">👥</div><div><span class="ev-stat-val" id="stat-guests">0</span><span class="ev-stat-lbl">Guests</span></div></div>
+      <div class="ev-stat-chip"><div class="ev-stat-icon">📅</div><div><span class="ev-stat-val" id="stat-date">—</span><span class="ev-stat-lbl">Event Date</span></div></div>
+    </div>
+    <div class="ev-tabs">
+      <button class="ev-tab active" onclick="switchEvTab(this,'gallery')">📸 Gallery</button>
+      <button class="ev-tab" onclick="switchEvTab(this,'upload')">⬆ Upload</button>
+      <button class="ev-tab" onclick="switchEvTab(this,'qr')">🔗 QR &amp; Invite</button>
+    </div>
+
+    <!-- Gallery -->
+    <div class="ev-pane active" id="pane-gallery">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+        <div style="font-size:.83rem;color:var(--ink-muted)" id="gallery-label">Loading...</div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-ghost btn-sm" onclick="refreshGallery()">↻ Refresh</button>
+          <button class="btn btn-ghost btn-sm" onclick="downloadAll()">⬇ Download All</button>
+        </div>
+      </div>
+      <div class="photo-grid" id="photo-grid"></div>
+    </div>
+
+    <!-- Upload -->
+    <div class="ev-pane" id="pane-upload">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,false)" ondragleave="this.classList.remove('dragover')">
+        <div class="upload-zone-icon">📤</div>
+        <div class="upload-zone-title">Upload photos to this event</div>
+        <div class="upload-zone-sub">Click to browse or drag &amp; drop · JPG, PNG, HEIC · Max 20MB each</div>
+        <div class="upload-progress-wrap" id="up-prog-wrap">
+          <div class="upload-progress-track"><div class="upload-progress-fill" id="up-bar" style="width:0%"></div></div>
+          <div class="upload-progress-text" id="up-text"></div>
+        </div>
+      </div>
+      <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="onFileSelect(event,false)">
+    </div>
+
+    <!-- QR -->
+    <div class="ev-pane" id="pane-qr">
+      <div class="qr-panel">
+        <div class="qr-visual">
+          <canvas id="qr-canvas"></canvas>
+          <button class="btn btn-ghost btn-sm" onclick="downloadQR()" style="width:100%">⬇ Download QR PNG</button>
+        </div>
+        <div>
+          <div class="qr-info-title">Share with your guests</div>
+          <div class="qr-info-sub">Guests scan this QR code with their phone camera — no app needed. They land directly on your event's upload page.</div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--ink-muted);margin-bottom:.4rem;letter-spacing:.04em">GUEST LINK</div>
+          <div class="guest-link-wrap" id="guest-link-display">—</div>
+          <div class="qr-actions">
+            <button class="btn btn-primary btn-md" onclick="copyGuestLink()">Copy Link</button>
+            <button class="btn btn-outline btn-md" onclick="shareInvite()">Share</button>
+            <button class="btn btn-ghost btn-md" onclick="downloadQR()">Download QR</button>
+          </div>
+          <div class="how-to-join">
+            <div class="how-to-join-title">HOW GUESTS JOIN</div>
+            <ol class="how-to-join-steps">
+              <li>Scan the QR code or open the link on their phone</li>
+              <li>Enter their name (no account required)</li>
+              <li>Tap the upload area to add a photo</li>
+              <li>It appears in everyone's gallery instantly ✨</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     GUEST PAGE
+════════════════════════════════ -->
+<div class="page" id="page-guest">
+  <div class="guest-nav">
+    <div class="guest-nav-logo">Lumi<em>ère</em></div>
+    <div class="guest-nav-badge">GUEST UPLOAD · NO ACCOUNT NEEDED</div>
+  </div>
+  <div class="guest-wrap">
+    <div class="guest-event-card">
+      <div class="guest-event-emoji" id="g-emoji">🎊</div>
+      <div>
+        <div class="guest-event-name" id="g-name">Loading event...</div>
+        <div class="guest-event-date" id="g-date"></div>
+      </div>
+    </div>
+    <!-- Upload -->
+    <div class="guest-card">
+      <div class="guest-card-title">📸 Add your photos</div>
+      <div class="form-field" style="margin-bottom:.75rem">
+        <label class="form-label">Your Name</label>
+        <input class="form-input" id="g-name-input" type="text" placeholder="e.g. Marie Dupont" maxlength="50" autocomplete="name">
+      </div>
+      <div class="upload-zone" id="g-upload-zone" onclick="document.getElementById('g-file-input').click()" ondragover="onDragOver(event)" ondrop="onDrop(event,true)" ondragleave="this.classList.remove('dragover')">
+        <div class="upload-zone-icon">📷</div>
+        <div class="upload-zone-title">Tap to add a photo</div>
+        <div class="upload-zone-sub">Your photo will appear in the shared gallery instantly</div>
+        <div class="upload-progress-wrap" id="g-prog-wrap">
+          <div class="upload-progress-track"><div class="upload-progress-fill" id="g-bar" style="width:0%"></div></div>
+          <div class="upload-progress-text" id="g-text"></div>
+        </div>
+      </div>
+      <input type="file" id="g-file-input" multiple accept="image/*" style="display:none" onchange="onFileSelect(event,true)">
+    </div>
+    <!-- Gallery -->
+    <div class="guest-card">
+      <div class="guest-realtime">
+        <div class="guest-card-title" style="margin:0">Shared Gallery</div>
+        <div class="realtime-badge"><div class="realtime-dot"></div> Live</div>
+      </div>
+      <div class="guest-gallery" id="guest-gallery">
+        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--ink-muted);font-size:.85rem">No photos yet — be the first! 📸</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-// ── QR CODE PATTERN ──
-function buildQR(){
-  const qr=document.getElementById('qr-grid');
-  if(!qr)return;
-  const p=[1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,0,1,0,1,0,1,0,1,0,0,0,1,1,1,1,0,1,1,1,0,1,1,1,0,0,0,1,1];
-  qr.innerHTML='';
-  p.forEach(v=>{const c=document.createElement('div');c.className='qr-cell'+(v===0?' empty':'');qr.appendChild(c);});
-}
-buildQR();
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let currentUser = null;
+let currentEvent = null;
+let lbUrl = '';
+let pendingCb = null;
+let pollTimer = null;
 
-// ── MODAL ──
-function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
-function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
-document.querySelectorAll('.modal-backdrop').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);});});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(m=>closeModal(m.id));});
+const EMOJIS = { wedding:'💍', birthday:'🎉', party:'🥂', corporate:'🏢', other:'🎊' };
+const TYPE_LABELS = { wedding:'Wedding', birthday:'Birthday', party:'Party', corporate:'Corporate', other:'Celebration' };
 
-// ── SCROLL ──
-function scrollTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'});}
-function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}
-
-// ── TOAST ──
-let toastTimer;
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
-}
-
-// ── FORM ACTIONS ──
-function submitCreate(){
-  closeModal('modal-create');
-  showToast('🎉 QR Code generated! Check your email.');
-}
-function submitContact(){
-  closeModal('modal-contact');
-  showToast('✉️ Message sent! We\'ll reply within 2 hours.');
-}
-
-// ── LANGUAGE CONTENT ──
-const content={
-  en:{
-    eyebrow:'For Weddings · Fêtes · Fiestas · Feste',
-    heroTitle:'Every moment,<br><em>shared forever.</em>',
-    heroSub:'Lumière lets your guests capture, share, and relive every magical moment — in real time, in their language, across Europe and beyond.',
-    heroCta:'Start Free Today',heroCta2:'See how it works',
-    availableIn:'Available in:',navCta:'Create Event →',
-    step1:'Create your event',step1d:'Set up your celebration in under 2 minutes. Choose your languages, event date, and style. Lumière generates a personalised QR code instantly.',
-    step2:'Guests join effortlessly',step2d:'No app download needed. Guests scan the QR code, pick their language, and start capturing moments immediately from their phones.',
-    step3:'Relive every moment',step3d:'After the event, your private gallery is ready — photos, videos, and POV reels from every guest\'s perspective. Order prints or download everything.',
-    stat1:'Photos shared',stat2:'Guests connected',stat3:'POV clips',
-    shareBtn:'Share your moment ↑',
-    ctaTitle:'Your celebration<br>deserves <em>Lumière</em>',
-    ctaSub:'Free to start. No credit card. Available in French, German, Spanish & English. GDPR compliant. EU servers.',
-    ctaBtn1:'Create your event free →',ctaBtn2:'See pricing',
-    inviteName:'Sophie & Julien ✦',inviteDate:'14 June 2025 · Château de Vaux, Paris',
-    phoneEventName:'Sophie & Julien',phoneEventDate:'14 June 2025',
-    modalTitle:'Create Your Event',modalSub:'Set up your celebration in under 2 minutes.',
-    navFeatures:'Features',navPricing:'Pricing',navContact:'Contact',
-    howCta:'Get started free →',
+// ══════════════════════════════════════════════
+// LOCAL STORAGE DB
+// ══════════════════════════════════════════════
+const DB = {
+  _get(k){ try { return JSON.parse(localStorage.getItem('lm_'+k) || 'null'); } catch { return null; } },
+  _set(k,v){ try { localStorage.setItem('lm_'+k, JSON.stringify(v)); } catch {} },
+  getUser(){ return this._get('user'); },
+  setUser(u){ this._set('user', u); },
+  getAllEvents(){ return this._get('events') || []; },
+  setAllEvents(evs){ this._set('events', evs); },
+  getEvents(uid){ return this.getAllEvents().filter(e => e.owner_id === uid); },
+  saveEvent(ev){
+    const all = this.getAllEvents();
+    const idx = all.findIndex(e => e.slug === ev.slug);
+    if (idx >= 0) all[idx] = ev; else all.unshift(ev);
+    this.setAllEvents(all);
   },
-  fr:{
-    eyebrow:'Mariages · Fêtes · Anniversaires · Soirées',
-    heroTitle:'Chaque instant,<br><em>partagé pour toujours.</em>',
-    heroSub:'Lumière permet à vos invités de capturer, partager et revivre chaque moment magique — en temps réel, dans leur langue.',
-    heroCta:'Commencer gratuitement',heroCta2:'Voir comment ça marche',
-    availableIn:'Disponible en :',navCta:'Créer un événement →',
-    step1:'Créez votre événement',step1d:'Configurez votre célébration en moins de 2 minutes. Choisissez vos langues, la date et le style. Lumière génère un QR code personnalisé instantanément.',
-    step2:'Les invités rejoignent facilement',step2d:'Aucune application à télécharger. Les invités scannent le QR code, choisissent leur langue et commencent à capturer des moments immédiatement.',
-    step3:'Revivez chaque instant',step3d:'Après l\'événement, votre galerie privée est prête — photos, vidéos et reels POV de chaque invité. Commandez des tirages ou téléchargez tout.',
-    stat1:'Photos partagées',stat2:'Invités connectés',stat3:'Clips POV',
-    shareBtn:'Partager votre moment ↑',
-    ctaTitle:'Votre célébration<br>mérite <em>Lumière</em>',
-    ctaSub:'Gratuit pour commencer. Aucune carte bancaire. Disponible en français, allemand, espagnol et anglais. Conforme RGPD. Serveurs UE.',
-    ctaBtn1:'Créer votre événement →',ctaBtn2:'Voir les tarifs',
-    inviteName:'Sophie & Julien ✦',inviteDate:'14 Juin 2025 · Château de Vaux, Paris',
-    phoneEventName:'Sophie & Julien',phoneEventDate:'14 Juin 2025',
-    modalTitle:'Créer votre événement',modalSub:'Configurez votre célébration en moins de 2 minutes.',
-    navFeatures:'Fonctionnalités',navPricing:'Tarifs',navContact:'Contact',
-    howCta:'Commencer gratuitement →',
-  },
-  de:{
-    eyebrow:'Hochzeiten · Geburtstage · Feste · Feiern',
-    heroTitle:'Jeder Moment,<br><em>für immer geteilt.</em>',
-    heroSub:'Mit Lumière können Ihre Gäste jeden magischen Moment erfassen, teilen und wiedererleben — in Echtzeit, in ihrer Sprache.',
-    heroCta:'Kostenlos starten',heroCta2:'Wie es funktioniert',
-    availableIn:'Verfügbar in:',navCta:'Ihr Event erstellen →',
-    step1:'Event erstellen',step1d:'Richten Sie Ihre Feier in unter 2 Minuten ein. Wählen Sie Sprachen, Datum und Stil. Lumière generiert sofort einen personalisierten QR-Code.',
-    step2:'Gäste nehmen mühelos teil',step2d:'Kein App-Download nötig. Gäste scannen den QR-Code, wählen ihre Sprache und beginnen sofort mit dem Aufnehmen von Momenten.',
-    step3:'Jeden Moment wieder erleben',step3d:'Nach dem Event ist Ihre private Galerie bereit — Fotos, Videos und POV-Reels aus jeder Perspektive. Prints bestellen oder alles herunterladen.',
-    stat1:'Geteilte Fotos',stat2:'Verbundene Gäste',stat3:'POV-Clips',
-    shareBtn:'Ihren Moment teilen ↑',
-    ctaTitle:'Ihre Feier<br>verdient <em>Lumière</em>',
-    ctaSub:'Kostenlos starten. Keine Kreditkarte. Verfügbar auf Französisch, Deutsch, Spanisch und Englisch. DSGVO-konform. EU-Server.',
-    ctaBtn1:'Event kostenlos erstellen →',ctaBtn2:'Preise ansehen',
-    inviteName:'Sophie & Julien ✦',inviteDate:'14. Juni 2025 · Château de Vaux, Paris',
-    phoneEventName:'Sophie & Julien',phoneEventDate:'14. Juni 2025',
-    modalTitle:'Ihr Event erstellen',modalSub:'Richten Sie Ihre Feier in unter 2 Minuten ein.',
-    navFeatures:'Funktionen',navPricing:'Preise',navContact:'Kontakt',
-    howCta:'Kostenlos loslegen →',
-  },
-  es:{
-    eyebrow:'Bodas · Fiestas · Cumpleaños · Celebraciones',
-    heroTitle:'Cada momento,<br><em>compartido para siempre.</em>',
-    heroSub:'Lumière permite a tus invitados capturar, compartir y revivir cada momento mágico — en tiempo real, en su idioma.',
-    heroCta:'Empieza gratis hoy',heroCta2:'Ver cómo funciona',
-    availableIn:'Disponible en:',navCta:'Crear tu evento →',
-    step1:'Crea tu evento',step1d:'Configura tu celebración en menos de 2 minutos. Elige tus idiomas, fecha y estilo. Lumière genera un código QR personalizado al instante.',
-    step2:'Los invitados se unen fácilmente',step2d:'Sin necesidad de descargar ninguna app. Los invitados escanean el QR, eligen su idioma y empiezan a capturar momentos inmediatamente.',
-    step3:'Revive cada momento',step3d:'Después del evento, tu galería privada está lista — fotos, vídeos y reels POV desde cada perspectiva. Pide copias o descarga todo.',
-    stat1:'Fotos compartidas',stat2:'Invitados conectados',stat3:'Clips POV',
-    shareBtn:'Comparte tu momento ↑',
-    ctaTitle:'Tu celebración<br>merece <em>Lumière</em>',
-    ctaSub:'Gratis para empezar. Sin tarjeta de crédito. Disponible en francés, alemán, español e inglés. Cumple con RGPD. Servidores UE.',
-    ctaBtn1:'Crea tu evento gratis →',ctaBtn2:'Ver precios',
-    inviteName:'Sophie & Julien ✦',inviteDate:'14 de junio de 2025 · Château de Vaux, París',
-    phoneEventName:'Sophie & Julien',phoneEventDate:'14 de jun. 2025',
-    modalTitle:'Crea tu evento',modalSub:'Configura tu celebración en menos de 2 minutos.',
-    navFeatures:'Funciones',navPricing:'Precios',navContact:'Contacto',
-    howCta:'Empezar gratis →',
+  getEventBySlug(slug){ return this.getAllEvents().find(e => e.slug === slug) || null; },
+  getPhotos(slug){ return this._get('ph_'+slug) || []; },
+  addPhoto(slug, p){ const all = this.getPhotos(slug); all.unshift(p); this._set('ph_'+slug, all); return all; },
+  delPhoto(slug, id){ const all = this.getPhotos(slug).filter(p => p.id !== id); this._set('ph_'+slug, all); return all; }
+};
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimers = {};
+function toast(msg, type = 'default'){
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  const id = Date.now();
+  toastTimers[id] = setTimeout(() => {
+    el.style.animation = 'none';
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .22s';
+    setTimeout(() => el.remove(), 250);
+  }, 3000);
+}
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+function doSignup(){
+  const name = v('su-name').trim(), email = v('su-email').trim(), pw = v('su-pw');
+  clearAuthAlerts();
+  if (!name || !email || !pw) return showAlert('auth-error', 'Please fill in all fields.');
+  if (pw.length < 6) return showAlert('auth-error', 'Password must be at least 6 characters.');
+  setLoading('btn-signup', true);
+  setTimeout(() => {
+    const user = { id: 'u_' + randStr(), email, name };
+    DB.setUser(user);
+    currentUser = user;
+    setLoading('btn-signup', false);
+    closeModal('modal-auth');
+    onLogin(user);
+  }, 700);
+}
+
+function doLogin(){
+  const email = v('li-email').trim(), pw = v('li-pw');
+  clearAuthAlerts();
+  if (!email || !pw) return showAlert('auth-error', 'Please fill in all fields.');
+  setLoading('btn-login', true);
+  setTimeout(() => {
+    let user = DB.getUser();
+    if (!user) user = { id: 'u_' + randStr(), email, name: email.split('@')[0] };
+    user.email = email;
+    DB.setUser(user);
+    currentUser = user;
+    setLoading('btn-login', false);
+    closeModal('modal-auth');
+    onLogin(user);
+  }, 600);
+}
+
+function doLogout(){
+  if (!confirm('Log out of Lumière?')) return;
+  currentUser = null;
+  stopPoll();
+  document.getElementById('nav-user').classList.remove('show');
+  document.getElementById('nav-cta').style.display = '';
+  showPage('home');
+  toast('Logged out successfully');
+}
+
+function onLogin(user){
+  updateNavUser(user);
+  toast('👋 Welcome, ' + user.name.split(' ')[0] + '!', 'success');
+  if (pendingCb) { const cb = pendingCb; pendingCb = null; setTimeout(cb, 200); }
+}
+
+function updateNavUser(user){
+  if (!user) return;
+  document.getElementById('nav-avatar').textContent = user.name.charAt(0).toUpperCase();
+  document.getElementById('nav-user').classList.add('show');
+  document.getElementById('nav-cta').style.display = 'none';
+}
+
+function requireAuth(cb){
+  if (currentUser) { cb(); return; }
+  pendingCb = cb;
+  openModal('modal-auth');
+}
+
+// ══════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════
+function doCreateEvent(){
+  const name = v('cr-name').trim();
+  if (!name) return showAlert('create-error', 'Event name is required.');
+  const type = v('cr-type'), date = v('cr-date'), loc = v('cr-loc').trim();
+  setLoading('btn-create', true);
+  setTimeout(() => {
+    const slug = randStr(10);
+    const ev = {
+      slug, name, type, date, location: loc,
+      emoji: EMOJIS[type] || '🎊',
+      owner_id: currentUser.id,
+      created_at: new Date().toISOString()
+    };
+    DB.saveEvent(ev);
+    setLoading('btn-create', false);
+    closeModal('modal-create');
+    ['cr-name','cr-date','cr-loc'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    document.getElementById('create-error').classList.remove('show');
+    toast('🎉 Event created! QR code is ready.', 'success');
+    openEvent(ev);
+  }, 900);
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+function loadDashboard(){
+  const grid = document.getElementById('events-grid');
+  if (!currentUser) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-emoji">🔐</div><div class="empty-title">Sign in to see your events</div><div class="empty-sub">Create or manage your event galleries</div><button class="btn btn-gold btn-xl" onclick="openModal('modal-auth')">Sign In</button></div>`;
+    return;
   }
+  const events = DB.getEvents(currentUser.id);
+  if (!events.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-emoji">📸</div><div class="empty-title">No events yet</div><div class="empty-sub">Create your first event and start sharing moments with your guests</div><button class="btn btn-gold btn-xl" onclick="openModal('modal-create')">Create First Event →</button></div>`;
+    return;
+  }
+  grid.innerHTML = events.map(ev => {
+    const photos = DB.getPhotos(ev.slug);
+    const guests = [...new Set(photos.map(p => p.guest_name).filter(Boolean))].length;
+    const dateFmt = ev.date ? fmtDate(ev.date) : '';
+    return `<div class="ev-card" onclick='openEvent(${JSON.stringify(ev)})'>
+      <div class="ev-card-cover" style="position:relative">
+        <span style="position:relative;z-index:1">${ev.emoji||'🎊'}</span>
+        ${photos.length > 0 ? `<div class="ev-photo-count">📸 ${photos.length}</div>` : ''}
+      </div>
+      <div class="ev-card-body">
+        <div class="ev-card-type">${(TYPE_LABELS[ev.type]||'Event').toUpperCase()}</div>
+        <div class="ev-card-name">${esc(ev.name)}</div>
+        <div class="ev-card-date">${dateFmt}${ev.location?' · '+esc(ev.location):''}</div>
+        <div class="ev-card-stats">
+          <div class="ev-card-stat"><strong>${photos.length}</strong>Photos</div>
+          <div class="ev-card-stat"><strong>${guests}</strong>Guests</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// EVENT DETAIL
+// ══════════════════════════════════════════════
+function openEvent(ev){
+  currentEvent = typeof ev === 'string' ? JSON.parse(ev) : ev;
+  showPage('event');
+  document.getElementById('ev-title').textContent = currentEvent.name;
+  const dateFmt = currentEvent.date ? fmtDate(currentEvent.date, true) : '';
+  document.getElementById('ev-meta').textContent = [dateFmt, currentEvent.location].filter(Boolean).join(' · ');
+  document.getElementById('stat-date').textContent = currentEvent.date ? fmtDate(currentEvent.date) : '—';
+  const gUrl = guestUrl(currentEvent.slug);
+  document.getElementById('guest-link-display').textContent = gUrl;
+  setTimeout(() => genQR(gUrl), 120);
+  refreshGallery();
+  startPoll();
+}
+
+function refreshGallery(){
+  if (!currentEvent) return;
+  const photos = DB.getPhotos(currentEvent.slug);
+  const guestNames = [...new Set(photos.map(p=>p.guest_name).filter(Boolean))];
+  document.getElementById('stat-photos').textContent = photos.length;
+  document.getElementById('stat-guests').textContent = guestNames.length;
+  renderPhotoGrid(photos);
+}
+
+function renderPhotoGrid(photos){
+  const grid = document.getElementById('photo-grid');
+  const label = document.getElementById('gallery-label');
+  if (!grid) return;
+  label.textContent = photos.length ? `${photos.length} photo${photos.length===1?'':'s'}` : 'No photos yet';
+  if (!photos.length) {
+    grid.innerHTML = '<div class="photo-grid-empty">No photos yet. Upload some or share the QR code with your guests!</div>';
+    return;
+  }
+  grid.innerHTML = photos.map(p => `
+    <div class="photo-item">
+      <img src="${p.url}" alt="${esc(p.guest_name||'')}" loading="lazy" onclick="openLB('${p.url.replace(/'/g,"\\'")}')">
+      <div class="photo-item-actions">
+        <button class="photo-action" onclick="openLB('${p.url.replace(/'/g,"\\'")}');event.stopPropagation()" title="View">🔍</button>
+        <button class="photo-action" onclick="dlPhoto('${p.url.replace(/'/g,"\\'")}','${p.id}');event.stopPropagation()" title="Download">⬇</button>
+        <button class="photo-action" onclick="delPhoto('${p.id}');event.stopPropagation()" title="Delete">🗑</button>
+      </div>
+      ${p.guest_name ? `<div class="photo-guest-tag">${esc(p.guest_name)}</div>` : ''}
+    </div>`).join('');
+}
+
+function delPhoto(id){
+  if (!currentEvent || !confirm('Delete this photo?')) return;
+  DB.delPhoto(currentEvent.slug, id);
+  refreshGallery();
+  toast('Photo deleted');
+}
+
+function switchEvTab(el, tab){
+  document.querySelectorAll('.ev-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ev-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pane-' + tab).classList.add('active');
+}
+
+// ══════════════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════════════
+function onDragOver(e){ e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+function onDrop(e, isGuest){ e.preventDefault(); e.currentTarget.classList.remove('dragover'); const files = [...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')); if(files.length) uploadFiles(files, isGuest); }
+function onFileSelect(e, isGuest){ const files = [...e.target.files]; if(files.length) uploadFiles(files, isGuest); e.target.value=''; }
+
+async function uploadFiles(files, isGuest){
+  const slug = isGuest ? window._guestSlug : currentEvent?.slug;
+  if (!slug) return;
+  const guestName = isGuest
+    ? (document.getElementById('g-name-input')?.value.trim() || 'Guest')
+    : (currentUser?.name || 'Host');
+  const progWrap = document.getElementById(isGuest ? 'g-prog-wrap' : 'up-prog-wrap');
+  const bar = document.getElementById(isGuest ? 'g-bar' : 'up-bar');
+  const txt = document.getElementById(isGuest ? 'g-text' : 'up-text');
+  progWrap.classList.add('show');
+  let done = 0;
+  for (const file of files){
+    if (file.size > 20*1024*1024){ toast('File too large (max 20MB)', 'error'); continue; }
+    txt.textContent = `Uploading ${file.name}… (${done+1}/${files.length})`;
+    try {
+      let pFile=file;
+      if(file.size>400*1024&&typeof compressImage==="function"){try{pFile=await compressImage(file);}catch(ce){}}
+      const url=await readAsDataURL(pFile);
+      const photo = { id:'p_'+randStr(), event_slug:slug, guest_name:guestName, url, filename:file.name, created_at:new Date().toISOString() };
+      DB.addPhoto(slug, photo);
+      done++;
+      bar.style.width = `${(done/files.length)*100}%`;
+      if (isGuest) renderGuestGallery(slug);
+      else refreshGallery();
+      await sleep(80);
+    } catch(e){ toast('Failed to upload ' + file.name, 'error'); }
+  }
+  progWrap.classList.remove('show');
+  bar.style.width = '0%';
+  txt.textContent = '';
+  if (done) toast(`✅ ${done} photo${done===1?'':'s'} uploaded!`, 'success');
+}
+
+// ══════════════════════════════════════════════
+// GUEST PAGE
+// ══════════════════════════════════════════════
+function loadGuestPage(slug){
+  window._guestSlug = slug;
+  const ev = DB.getEventBySlug(slug);
+  if (!ev){
+    document.getElementById('g-name').textContent = 'Event not found';
+    document.getElementById('g-date').textContent = 'This link may be invalid or expired.';
+    document.getElementById('g-upload-zone').style.display = 'none';
+    document.getElementById('g-file-input').style.display = 'none';
+    document.getElementById('g-name-input').parentElement.style.display = 'none';
+    return;
+  }
+  document.getElementById('g-emoji').textContent = ev.emoji || '🎊';
+  document.getElementById('g-name').textContent = ev.name;
+  const dateFmt = ev.date ? fmtDate(ev.date, true) : '';
+  document.getElementById('g-date').textContent = [dateFmt, ev.location].filter(Boolean).join(' · ');
+  renderGuestGallery(slug);
+  setInterval(() => renderGuestGallery(slug), 3000);
+}
+
+function renderGuestGallery(slug){
+  const photos = DB.getPhotos(slug);
+  const gallery = document.getElementById('guest-gallery');
+  if (!gallery) return;
+  gallery.innerHTML = photos.length
+    ? photos.map(p=>`<div class="guest-photo" onclick="openLB('${p.url.replace(/'/g,"\\'")}')"><img src="${p.url}" alt="${esc(p.guest_name||'')}" loading="lazy">${p.guest_name?`<div class="guest-photo-name">${esc(p.guest_name)}</div>`:''}</div>`).join('')
+    : '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--ink-muted);font-size:.85rem">No photos yet — be the first! 📸</div>';
+}
+
+// ══════════════════════════════════════════════
+// QR & SHARING
+// ══════════════════════════════════════════════
+function genQR(url){
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas || !window.QRCode) return;
+  QRCode.toCanvas(canvas, url, {width:200, margin:2, color:{dark:'#0F0F0E', light:'#FAF7F2'}}, err => { if(err) console.warn(err); });
+}
+
+function downloadQR(){
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = `lumiere-qr-${currentEvent?.slug||'event'}.png`;
+  a.click();
+  toast('QR code downloaded');
+}
+
+function guestUrl(slug){ return location.href.split('?')[0] + '?event=' + slug; }
+
+function copyGuestLink(){
+  const link = document.getElementById('guest-link-display')?.textContent || '';
+  navigator.clipboard.writeText(link).then(() => {
+    toast('Link copied! 📋', 'success');
+  });
+}
+
+function shareInvite(){
+  if (!currentEvent) return;
+  const url = guestUrl(currentEvent.slug);
+  if (navigator.share) navigator.share({ title: currentEvent.name, text: 'Join my event gallery on Lumière!', url });
+  else navigator.clipboard.writeText(url).then(() => toast('Guest link copied! Share it with your guests 📋'));
+}
+
+// ══════════════════════════════════════════════
+// DOWNLOADS & LIGHTBOX
+// ══════════════════════════════════════════════
+function openLB(url){ lbUrl=url; document.getElementById('lb-img').src=url; document.getElementById('lightbox').classList.add('open'); }
+function closeLB(){ document.getElementById('lightbox').classList.remove('open'); }
+function dlCurrentPhoto(){ dlPhoto(lbUrl, 'photo'); }
+function dlPhoto(url, id){
+  const a = document.createElement('a');
+  a.href = url; a.download = 'lumiere-photo-'+(id||Date.now())+'.jpg'; a.click();
+}
+// downloadAll defined below (with ZIP support)
+
+// ══════════════════════════════════════════════
+// POLLING (simulates realtime)
+// ══════════════════════════════════════════════
+function startPoll(){ clearInterval(pollTimer); pollTimer = setInterval(refreshGallery, 4000); }
+function stopPoll(){ clearInterval(pollTimer); }
+
+// ══════════════════════════════════════════════
+// PAGE NAVIGATION
+// ══════════════════════════════════════════════
+function showPage(name){
+  stopPoll();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('main-nav').style.display = name==='guest' ? 'none' : '';
+  window.scrollTo(0,0);
+  if (name==='dashboard') loadDashboard();
+  if (name==='event') startPoll();
+}
+
+function scrollTo(id){
+  showPage('home');
+  setTimeout(()=>document.getElementById(id)?.scrollIntoView({behavior:'smooth'}),150);
+}
+
+// ══════════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) closeModal(m.id); }));
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id));
+    closeLB();
+  }
+});
+
+function switchAuthTab(tab){
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelector(`.modal-tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById('pane-'+tab).classList.add('active');
+  clearAuthAlerts();
+}
+
+function showAlert(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function clearAuthAlerts(){
+  ['auth-error','auth-success'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+}
+
+// ══════════════════════════════════════════════
+// LANGUAGE
+// ══════════════════════════════════════════════
+const LANG = {
+  en:{eyebrow:'Weddings · Fêtes · Fiestas · Feste',heroTitle:'Every moment,<br><em class="serif">shared forever.</em>',heroSub:'Lumière lets your guests capture, share, and relive every magical moment — in real time, in their own language.',heroCta:'Start Free Today',heroCta2:'See how it works',availIn:'Available in 4 languages · GDPR compliant · Free to start',navCta:'Create Event',s1:'Create your event',s1d:'Sign up free, name your event, set the date. A unique QR code and gallery are generated instantly.',s2:'Guests join effortlessly',s2d:'Share the QR code. Guests scan, enter their name, and upload photos. No app download ever required.',s3:'Relive every moment',s3d:'Every photo is in your dashboard. Download the full album or share the gallery link.',howCta:'Get started free →',ctaTitle:'Your celebration<br>deserves <em>Lumière</em>',ctaSub:'Free to start. Real photo uploads. Live gallery for all guests. GDPR compliant. EU servers.',ctaBtn:'Create your event free →'},
+  fr:{eyebrow:'Mariages · Fêtes · Anniversaires · Soirées',heroTitle:'Chaque instant,<br><em class="serif">partagé pour toujours.</em>',heroSub:'Lumière permet à vos invités de capturer et partager chaque moment magique — en temps réel, dans leur langue.',heroCta:'Commencer gratuitement',heroCta2:'Voir comment ça marche',availIn:'Disponible en 4 langues · Conforme RGPD · Gratuit',navCta:'Créer un événement',s1:'Créez votre événement',s1d:'Inscrivez-vous gratuitement, nommez votre événement. Un QR code unique et une galerie sont générés instantanément.',s2:'Les invités rejoignent facilement',s2d:'Partagez le QR code. Les invités scannent, entrent leur nom et téléchargent des photos. Aucune app requise.',s3:'Revivez chaque instant',s3d:'Toutes les photos sont dans votre tableau de bord. Téléchargez ou partagez le lien de la galerie.',howCta:'Commencer gratuitement →',ctaTitle:'Votre célébration<br>mérite <em>Lumière</em>',ctaSub:'Gratuit pour commencer. Téléchargement réel. Galerie en temps réel. Conforme RGPD. Serveurs UE.',ctaBtn:'Créer votre événement →'},
+  de:{eyebrow:'Hochzeiten · Geburtstage · Feste · Feiern',heroTitle:'Jeder Moment,<br><em class="serif">für immer geteilt.</em>',heroSub:'Mit Lumière können Ihre Gäste jeden magischen Moment erfassen und teilen — in Echtzeit, in ihrer Sprache.',heroCta:'Kostenlos starten',heroCta2:'Wie es funktioniert',availIn:'In 4 Sprachen verfügbar · DSGVO-konform · Kostenlos',navCta:'Event erstellen',s1:'Ihr Event erstellen',s1d:'Kostenlos registrieren, Event benennen, Datum wählen. Ein einzigartiger QR-Code und eine Galerie werden sofort erstellt.',s2:'Gäste nehmen mühelos teil',s2d:'QR-Code teilen. Gäste scannen, geben ihren Namen ein und laden Fotos hoch. Keine App erforderlich.',s3:'Jeden Moment wieder erleben',s3d:'Alle Fotos im Dashboard. Gesamtes Album herunterladen oder Galerielink teilen.',howCta:'Kostenlos loslegen →',ctaTitle:'Ihre Feier<br>verdient <em>Lumière</em>',ctaSub:'Kostenlos starten. Echter Foto-Upload. Echtzeit-Galerie. DSGVO-konform. EU-Server.',ctaBtn:'Event kostenlos erstellen →'},
+  es:{eyebrow:'Bodas · Fiestas · Cumpleaños · Celebraciones',heroTitle:'Cada momento,<br><em class="serif">compartido para siempre.</em>',heroSub:'Lumière permite a tus invitados capturar y compartir cada momento mágico — en tiempo real, en su propio idioma.',heroCta:'Empieza gratis hoy',heroCta2:'Ver cómo funciona',availIn:'Disponible en 4 idiomas · Cumple RGPD · Gratis',navCta:'Crear tu evento',s1:'Crea tu evento',s1d:'Regístrate gratis, nombra tu evento, elige la fecha. Un código QR único y una galería se generan al instante.',s2:'Los invitados se unen fácilmente',s2d:'Comparte el QR. Los invitados escanean, ponen su nombre y suben fotos. Sin app requerida.',s3:'Revive cada momento',s3d:'Todas las fotos en tu panel. Descarga el álbum completo o comparte el enlace de la galería.',howCta:'Empezar gratis →',ctaTitle:'Tu celebración<br>merece <em>Lumière</em>',ctaSub:'Gratis para empezar. Carga real de fotos. Galería en tiempo real. Cumple RGPD. Servidores UE.',ctaBtn:'Crea tu evento gratis →'}
 };
 
 function setLang(lang){
-  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
-  const c=content[lang];
-  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.innerHTML=val;};
-  set('eyebrow-text',c.eyebrow);
-  set('hero-title',c.heroTitle);
-  set('hero-sub',c.heroSub);
-  set('hero-cta',c.heroCta);
-  set('hero-cta2',c.heroCta2);
-  set('available-in',c.availableIn);
-  set('nav-cta-btn',c.navCta);
-  set('step1-title',c.step1);set('step1-desc',c.step1d);
-  set('step2-title',c.step2);set('step2-desc',c.step2d);
-  set('step3-title',c.step3);set('step3-desc',c.step3d);
-  set('stat1-label',c.stat1);set('stat2-label',c.stat2);set('stat3-label',c.stat3);
-  set('share-btn-txt',c.shareBtn);
-  set('cta-title',c.ctaTitle);
-  set('cta-sub',c.ctaSub);
-  set('cta-btn1',c.ctaBtn1);set('cta-btn2',c.ctaBtn2);
-  set('invite-event-name',c.inviteName);set('invite-event-date',c.inviteDate);
-  set('phone-event-name',c.phoneEventName);set('phone-event-date',c.phoneEventDate);
-  set('modal-title',c.modalTitle);set('modal-sub',c.modalSub);
-  set('nav-features',c.navFeatures);set('nav-pricing',c.navPricing);set('nav-contact',c.navContact);
-  set('how-cta-btn',c.howCta);
+  document.querySelectorAll('.lang-pill').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.lang-pill[onclick*="'${lang}'"]`).classList.add('active');
+  document.querySelectorAll('.lang-card').forEach(c=>c.classList.remove('active-lang'));
+  const lc = document.getElementById('lc-'+lang);
+  if (lc) lc.classList.add('active-lang');
+  const L = LANG[lang];
+  const s = (id,v) => { const el=document.getElementById(id); if(el) el.innerHTML=v; };
+  s('eyebrow-text',L.eyebrow);
+  s('hero-title',L.heroTitle);
+  s('hero-sub',L.heroSub);
+  s('hero-cta',L.heroCta);
+  s('hero-cta2',L.heroCta2);
+  s('available-in',L.availIn);
+  s('nav-cta',L.navCta);
+  s('step1-title',L.s1); s('step1-desc',L.s1d);
+  s('step2-title',L.s2); s('step2-desc',L.s2d);
+  s('step3-title',L.s3); s('step3-desc',L.s3d);
+  s('how-cta',L.howCta);
+  s('cta-title',L.ctaTitle);
+  s('cta-sub',L.ctaSub);
+  s('cta-btn',L.ctaBtn);
 }
 
-// Photo credits note: photos from Pexels.com (free commercial use)
+// ══════════════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════════════
+function checkRoute(){
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('event');
+  if (slug) {
+    document.getElementById('main-nav').style.display = 'none';
+    showPage('guest');
+    loadGuestPage(slug);
+  }
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function v(id){ return document.getElementById(id)?.value || ''; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function randStr(n=12){ const chars='abcdefghijklmnopqrstuvwxyz0123456789'; return Array.from({length:n},()=>chars[Math.random()*chars.length|0]).join(''); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function readAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(file); }); }
+function fmtDate(d, long=false){ try{ const dt=new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-GB',{day:'numeric',month:long?'long':'short',year:'numeric'}); }catch{return d;} }
+
+function setLoading(id, on){
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = on;
+  if (on){ btn._orig=btn.innerHTML; btn.innerHTML='<div class="spinner"></div> Please wait…'; }
+  else btn.innerHTML = btn._orig || btn.innerHTML;
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = DB.getUser();
+  if (saved){ currentUser=saved; updateNavUser(saved); }
+  checkRoute();
+  setTimeout(()=>{
+    const ls=document.getElementById('loading-screen');
+    ls.style.opacity='0';
+    setTimeout(()=>ls.style.display='none',420);
+  },1400);
+});
+
+// ============ ADDITIONAL FEATURES ============
+
+// ZIP download
+async function downloadAll(){
+  if(!currentEvent)return;
+  const photos=DB.getPhotos(currentEvent.slug);
+  if(!photos.length){toast("No photos to download yet.");return;}
+  if(window.JSZip&&photos.length>1){
+    toast("Creating ZIP of "+photos.length+" photos...");
+    try{
+      const zip=new JSZip();
+      const folder=zip.folder(currentEvent.name.replace(/[^a-z0-9]/gi,"_"));
+      let i=0;
+      for(const p of photos){
+        const res=await fetch(p.url);
+        const blob=await res.blob();
+        const ext=blob.type.includes("png")?"png":"jpg";
+        const nm=(p.guest_name||"photo").replace(/[^a-z0-9]/gi,"_");
+        folder.file(nm+"_"+(++i)+"."+ext,blob);
+      }
+      const content=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(content);
+      a.download="lumiere-"+currentEvent.name.replace(/[^a-z0-9]/gi,"_")+".zip";
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      toast("ZIP downloaded!","success");return;
+    }catch(e){console.warn("ZIP failed:",e);}
+  }
+  toast("Downloading "+photos.length+" photos...");
+  photos.forEach((p,i)=>setTimeout(()=>dlPhoto(p.url,p.id),i*300));
+}
+
+// Image compression
+async function compressImage(file,maxWH=1920,quality=0.88){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxWH||h>maxWH){if(w>h){h=Math.round(h*(maxWH/w));w=maxWH;}else{w=Math.round(w*(maxWH/h));h=maxWH;}}
+      const c=document.createElement("canvas");
+      c.width=w;c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      c.toBlob(blob=>resolve(blob?new File([blob],file.name,{type:"image/jpeg"}):file),"image/jpeg",quality);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(file);};
+    img.src=url;
+  });
+}
+
+// Share functions
+function openShareModal(){
+  closeEvMenu();
+  if(!currentEvent)return;
+  const url=guestUrl(currentEvent.slug);
+  document.getElementById("share-ev-name").textContent=currentEvent.name;
+  document.getElementById("share-link-display").textContent=url;
+  openModal("modal-share");
+}
+function shareCopy(){const l=document.getElementById("share-link-display").textContent;navigator.clipboard.writeText(l).then(()=>{toast("Link copied!","success");closeModal("modal-share");});}
+function shareNative(){if(!currentEvent)return;const u=guestUrl(currentEvent.slug);if(navigator.share){navigator.share({title:currentEvent.name,text:"Join my event gallery on Lumiere!",url:u});closeModal("modal-share");}else shareCopy();}
+function shareWA(){if(!currentEvent)return;const u=guestUrl(currentEvent.slug);const m=encodeURIComponent("Join \""+currentEvent.name+"\" on Lumiere!\n"+u);window.open("https://wa.me/?text="+m,"_blank");closeModal("modal-share");}
+function shareEmail(){if(!currentEvent)return;const u=guestUrl(currentEvent.slug);const s=encodeURIComponent("Join our photo gallery: "+currentEvent.name);const b=encodeURIComponent("Hi!\n\nJoin our shared photo gallery.\n\nLink: "+u+"\n\nNo app needed!");window.open("mailto:?subject="+s+"&body="+b,"_blank");closeModal("modal-share");}
+
+// Event menu
+function toggleEvMenu(e){e.stopPropagation();document.getElementById("ev-menu-dd").classList.toggle("open");}
+function closeEvMenu(){document.getElementById("ev-menu-dd")?.classList.remove("open");}
+document.addEventListener("click",()=>closeEvMenu());
+
+// Edit event
+function openEditEvent(){closeEvMenu();if(!currentEvent)return;document.getElementById("edit-name").value=currentEvent.name;document.getElementById("edit-loc").value=currentEvent.location||"";document.getElementById("edit-date").value=currentEvent.date||"";document.getElementById("edit-error").classList.remove("show");openModal("modal-edit");}
+function saveEdit(){
+  const name=document.getElementById("edit-name").value.trim();
+  if(!name){showAlert("edit-error","Event name is required.");return;}
+  currentEvent.name=name;currentEvent.location=document.getElementById("edit-loc").value.trim();currentEvent.date=document.getElementById("edit-date").value;
+  DB.saveEvent(currentEvent);
+  document.getElementById("ev-title").textContent=currentEvent.name;
+  const d=currentEvent.date?fmtDate(currentEvent.date,true):"";
+  document.getElementById("ev-meta").textContent=[d,currentEvent.location].filter(Boolean).join(" - ");
+  document.getElementById("stat-date").textContent=currentEvent.date?fmtDate(currentEvent.date):"--";
+  closeModal("modal-edit");toast("Event updated!","success");
+}
+function deleteEvent(){
+  if(!currentEvent)return;
+  if(!confirm("Delete \""+currentEvent.name+"\" and all its photos? This cannot be undone."))return;
+  DB.setAllEvents(DB.getAllEvents().filter(e=>e.slug!==currentEvent.slug));
+  try{localStorage.removeItem("lm_ph_"+currentEvent.slug);}catch{}
+  closeModal("modal-edit");currentEvent=null;stopPoll();showPage("dashboard");toast("Event deleted");
+}
+
+// Override shareInvite
+function shareInvite(){openShareModal();}
+
+
+// ════════════════════════════════════════════════════════════
+// SUPABASE CONFIGURATION
+// Paste your values from: supabase.com → Project → Settings → API
+// ════════════════════════════════════════════════════════════
+const SUPA_URL = 'SUPABASE_URL_HERE';   // e.g. https://abcxyz.supabase.co
+const SUPA_KEY = 'SUPABASE_ANON_KEY_HERE'; // eyJhbGci...
+
+// Auto-detect: demo mode if not configured
+const SUPA_READY = !SUPA_URL.includes('HERE') && !SUPA_KEY.includes('HERE');
+let _sb = null;
+if (SUPA_READY) {
+  _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  // Hide demo banner
+  document.getElementById('cfg-banner').style.display = 'none';
+}
+
+// ── SUPABASE AUTH (overrides localStorage auth when configured) ──
+if (SUPA_READY) {
+  // Override doSignup
+  window.doSignup = async function() {
+    const name = document.getElementById('su-name').value.trim();
+    const email = document.getElementById('su-email').value.trim();
+    const pw = document.getElementById('su-pw').value;
+    ['auth-error','auth-success'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+    if (!name || !email || !pw) return authMsg('error', 'Please fill in all fields.');
+    if (pw.length < 6) return authMsg('error', 'Password must be at least 6 characters.');
+    setBtnLoading('btn-signup', true);
+    const { data, error } = await _sb.auth.signUp({ email, password: pw, options: { data: { full_name: name } } });
+    setBtnLoading('btn-signup', false);
+    if (error) return authMsg('error', error.message);
+    if (data.user && !data.session) { authMsg('ok', 'Check your email to confirm your account!'); return; }
+    currentUser = { id: data.user.id, email: data.user.email, name };
+    closeModal('modal-auth'); onLogin(currentUser);
+  };
+
+  // Override doLogin
+  window.doLogin = async function() {
+    const email = document.getElementById('li-email').value.trim();
+    const pw = document.getElementById('li-pw').value;
+    ['auth-error','auth-success'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+    if (!email || !pw) return authMsg('error', 'Please fill in all fields.');
+    setBtnLoading('btn-login', true);
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pw });
+    setBtnLoading('btn-login', false);
+    if (error) return authMsg('error', error.message);
+    currentUser = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || email.split('@')[0] };
+    closeModal('modal-auth'); onLogin(currentUser);
+  };
+
+  // Override doLogout  
+  window.doLogout = async function() {
+    if (!confirm('Log out?')) return;
+    await _sb.auth.signOut();
+    currentUser = null; stopPoll();
+    document.getElementById('nav-user').classList.remove('show');
+    document.getElementById('nav-cta').style.display = '';
+    showPage('home'); showToast('Logged out');
+  };
+
+  // Listen for auth state (handles page refresh, email confirm)
+  _sb.auth.onAuthStateChange((event, session) => {
+    if (session?.user && !currentUser) {
+      currentUser = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email.split('@')[0] };
+      updateNavUser(currentUser);
+    }
+  });
+}
+
+// ── SUPABASE EVENT CRUD ──
+if (SUPA_READY) {
+  // Override doCreateEvent
+  window.doCreateEvent = async function() {
+    const name = document.getElementById('cr-name').value.trim();
+    if (!name) { showMsg('create-error', 'Event name is required.', true); return; }
+    const type = document.getElementById('cr-type').value;
+    const date = document.getElementById('cr-date').value;
+    const loc = document.getElementById('cr-loc').value.trim();
+    setBtnLoading('btn-create', true);
+    const slug = randStr(10);
+    const evData = { slug, name, type, date: date || null, location: loc || null, emoji: {wedding:'💍',birthday:'🎉',party:'🥂',corporate:'🏢',other:'🎊'}[type]||'🎊', owner_id: currentUser.id, tier: 'free' };
+    const { data: ev, error } = await _sb.from('events').insert(evData).select().single();
+    setBtnLoading('btn-create', false);
+    if (error) { showMsg('create-error', error.message, true); return; }
+    closeModal('modal-create');
+    ['cr-name','cr-date','cr-loc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    showToast('🎉 Event created!', 'success');
+    openEvent(ev);
+  };
+
+  // Override loadDashboard
+  window.loadDashboard = async function() {
+    const list = document.getElementById('events-list') || document.getElementById('evgr') || document.getElementById('events-grid');
+    if (!list) return;
+    if (!currentUser) { list.innerHTML = '<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:3rem"><button class="btn-gold" onclick="openModal('modal-auth')">Sign In</button></div>'; return; }
+    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--ink-m)"><div class="spinner" style="border-color:var(--champagne);border-top-color:var(--gold);width:24px;height:24px;border-width:3px;margin:0 auto"></div></div>';
+    const { data: events } = await _sb.from('events').select('*').eq('owner_id', currentUser.id).order('created_at', { ascending: false });
+    if (!events || !events.length) {
+      list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:#fff;border-radius:24px;border:2px dashed var(--border)"><div style="font-size:3rem;margin-bottom:1rem">📸</div><div style="font-family:var(--font-display,serif);font-size:1.4rem;color:var(--ink);margin-bottom:.5rem">No events yet</div><div style="font-size:.88rem;color:var(--ink-m);margin-bottom:1.5rem">Create your first event</div><button class="btn-gold" onclick="openModal('modal-create')" style="background:var(--gold);color:#fff;border:none;padding:.88rem 1.9rem;border-radius:50px;font-size:.94rem;font-weight:500;cursor:pointer">Create First Event →</button></div>';
+      return;
+    }
+    const { data: phs } = await _sb.from('photos').select('event_slug').in('event_slug', events.map(e => e.slug));
+    const cnt = {}; (phs||[]).forEach(p => { cnt[p.event_slug] = (cnt[p.event_slug]||0)+1; });
+    list.innerHTML = events.map(ev => {
+      const n = cnt[ev.slug]||0;
+      const d = ev.date ? new Date(ev.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      return `<div class="event-card-dash ev-card" onclick='openEvent(${JSON.stringify(ev).replace(/"/g,"&quot;")})'  style="background:#fff;border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;transition:.3s;">
+        <div class="event-card-cover ev-cov" style="height:138px;background:linear-gradient(135deg,var(--champagne,#e8dcc8),var(--cream,#faf7f2));display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">
+          ${ev.emoji||'🎊'}
+          ${n>0?`<div style="position:absolute;top:9px;right:9px;background:rgba(15,15,14,.58);color:#fff;border-radius:100px;padding:.2rem .58rem;font-size:.66rem;font-weight:600">📸 ${n}</div>`:''}
+        </div>
+        <div style="padding:1.1rem">
+          <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-m);margin-bottom:.28rem">${ev.type||'EVENT'}</div>
+          <div style="font-family:var(--font-display,serif);font-size:1.1rem;color:var(--ink);margin-bottom:.22rem">${esc(ev.name)}</div>
+          <div style="font-size:.76rem;color:var(--ink-m);margin-bottom:.85rem">${d}${ev.location?' · '+esc(ev.location):''}</div>
+          <div style="display:flex;gap:1.1rem;padding-top:.8rem;border-top:1px solid var(--border)">
+            <div style="font-size:.7rem;color:var(--ink-m)"><strong style="display:block;font-size:.9rem;font-weight:700;color:var(--ink)">${n}</strong>Photos</div>
+            <div style="font-size:.7rem;color:var(--ink-m)"><strong style="display:block;font-size:.9rem;font-weight:700;color:var(--ink)">${ev.tier||'Free'}</strong>Plan</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+}
+
+// ── SUPABASE PHOTO UPLOAD ──
+if (SUPA_READY) {
+  window.uploadFiles = async function(files, isGuest) {
+    const slug = isGuest ? window._guestSlug : currentEvent?.slug;
+    if (!slug) return;
+    const guestName = isGuest ? (document.getElementById('g-guest-name')?.value.trim()||'Guest') : (currentUser?.name||'Host');
+    const progWrap = document.getElementById(isGuest?'g-prog-wrap':'up-prog-wrap');
+    const bar = document.getElementById(isGuest?'g-bar':'up-bar');
+    const status = document.getElementById(isGuest?'g-upload-status':'up-status');
+    if (progWrap) progWrap.classList.add('show');
+    let done = 0;
+    for (const file of files) {
+      if (file.size > 20*1024*1024) { showToast('File too large (max 20MB)', 'error'); continue; }
+      if (status) status.textContent = `Uploading ${file.name}… (${done+1}/${files.length})`;
+      try {
+        let pf = file;
+        if (file.size > 400*1024 && typeof compressImage === 'function') { try { pf = await compressImage(file); } catch(e){} }
+        const path = `${slug}/${Date.now()}_${pf.name.replace(/[^a-z0-9.]/gi,'_').toLowerCase()}`;
+        const { error: se } = await _sb.storage.from('event-photos').upload(path, pf, { cacheControl: '3600' });
+        if (se) throw new Error(se.message);
+        const { data: { publicUrl } } = _sb.storage.from('event-photos').getPublicUrl(path);
+        const { error: de } = await _sb.from('photos').insert({ event_slug: slug, guest_name: guestName, storage_path: path, url: publicUrl, mime_type: pf.type, file_size: pf.size });
+        if (de) throw new Error(de.message);
+        done++; if (bar) bar.style.width = `${done/files.length*100}%`;
+        if (!isGuest) refreshGallery();
+      } catch(e) { showToast('Upload failed: ' + e.message, 'error'); }
+    }
+    if (progWrap) progWrap.classList.remove('show');
+    if (bar) bar.style.width = '0%';
+    if (status) status.textContent = '';
+    if (done) showToast(`✅ ${done} photo${done===1?'':'s'} uploaded!`, 'success');
+  };
+
+  // Real gallery load
+  window.refreshGallery = async function() {
+    if (!currentEvent) return;
+    const { data: photos } = await _sb.from('photos').select('*').eq('event_slug', currentEvent.slug).order('created_at', { ascending: false });
+    if (!photos) return;
+    const guests = [...new Set(photos.map(p=>p.guest_name).filter(Boolean))];
+    const sc1 = document.getElementById('stat-photos') || document.getElementById('sc-photos');
+    const sc2 = document.getElementById('stat-guests') || document.getElementById('sc-guests');
+    if (sc1) sc1.textContent = photos.length;
+    if (sc2) sc2.textContent = guests.length;
+    renderPhotoGrid(photos);
+  };
+
+  // Real guest gallery
+  window.loadGuestPage = async function(slug) {
+    window._guestSlug = slug;
+    const { data: ev } = await _sb.from('events').select('*').eq('slug', slug).single();
+    if (!ev) { document.getElementById('g-name').textContent='Event not found'; return; }
+    document.getElementById('g-ico').textContent = ev.emoji||'🎊';
+    document.getElementById('g-name').textContent = ev.name;
+    const d = ev.date ? new Date(ev.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+    document.getElementById('g-date').textContent = [d,ev.location].filter(Boolean).join(' · ');
+    loadGuestGalleryReal(slug);
+    // Realtime subscription
+    _sb.channel('guest-'+slug).on('postgres_changes',{event:'INSERT',schema:'public',table:'photos',filter:`event_slug=eq.${slug}`},()=>loadGuestGalleryReal(slug)).subscribe();
+  };
+
+  async function loadGuestGalleryReal(slug) {
+    const { data: photos } = await _sb.from('photos').select('*').eq('event_slug', slug).order('created_at',{ascending:false});
+    renderGuestGallery(slug, photos||[]);
+  }
+
+  // Realtime for host gallery
+  let rtCh = null;
+  const origStartPoll = window.startPoll;
+  window.startPoll = function() {
+    if (rtCh) _sb.removeChannel(rtCh);
+    if (!currentEvent) return;
+    rtCh = _sb.channel('ev-'+currentEvent.slug)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'photos',filter:`event_slug=eq.${currentEvent.slug}`},()=>{ showToast('📸 New photo!','success'); refreshGallery(); })
+      .subscribe();
+  };
+  window.stopPoll = function() { if (rtCh) { _sb.removeChannel(rtCh); rtCh=null; } };
+
+  // Delete photo from Supabase
+  window.delPhoto = async function(id) {
+    if (!currentEvent || !confirm('Delete this photo?')) return;
+    await _sb.from('photos').delete().eq('id', id);
+    refreshGallery(); showToast('Photo deleted');
+  };
+
+  // Edit event save
+  window.saveEdit = async function() {
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { const el=document.getElementById('edit-error'); if(el){el.textContent='Event name required.';el.classList.add('show');} return; }
+    currentEvent.name = name;
+    currentEvent.location = document.getElementById('edit-loc').value.trim();
+    currentEvent.date = document.getElementById('edit-date').value;
+    await _sb.from('events').update({ name: currentEvent.name, location: currentEvent.location, date: currentEvent.date||null }).eq('slug', currentEvent.slug);
+    const t=document.getElementById('ev-title')||document.getElementById('ev-t'); if(t) t.textContent=currentEvent.name;
+    closeModal('modal-edit'); showToast('Event updated!','success');
+  };
+
+  // Delete event from Supabase
+  window.deleteEvent = async function() {
+    if (!currentEvent || !confirm(`Delete "${currentEvent.name}"? This cannot be undone.`)) return;
+    await _sb.from('events').delete().eq('slug', currentEvent.slug);
+    closeModal('modal-edit'); currentEvent=null; stopPoll(); showPage('dashboard'); showToast('Event deleted');
+  };
+
+  // Session restore on page load
+  _sb.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      currentUser = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email.split('@')[0] };
+      updateNavUser(currentUser);
+    }
+  });
+}
+
+// Helper: render guest gallery (used by both demo and real modes)
+window.renderGuestGallery = function(slug, photos) {
+  const gallery = document.getElementById('guest-gallery');
+  if (!gallery) return;
+  gallery.innerHTML = photos.length
+    ? photos.map(p => `<div class="guest-photo" onclick="openLightbox('${p.url.replace(/'/g,"\'")}')"><img src="${p.url}" alt="${esc(p.guest_name||'')}" loading="lazy">${p.guest_name?`<div class="guest-photo-name">${esc(p.guest_name)}</div>`:''}</div>`).join('')
+    : '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--warm-gray,#6b6560);font-size:.85rem">No photos yet — be the first! 📸</div>';
+};
+
+console.log('Lumière:', SUPA_READY ? '✅ Connected to Supabase' : '⚠️ Demo mode (localStorage)');
+
 </script>
 </body>
 </html>
