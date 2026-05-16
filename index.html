@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 /* ── RESET & TOKENS ── */
@@ -1533,6 +1534,254 @@ function deleteEvent(){
 
 // Override shareInvite
 function shareInvite(){openShareModal();}
+
+
+// ════════════════════════════════════════════════════════════
+// SUPABASE CONFIGURATION
+// Paste your values from: supabase.com → Project → Settings → API
+// ════════════════════════════════════════════════════════════
+const SUPA_URL = 'SUPABASE_URL_HERE';   // e.g. https://abcxyz.supabase.co
+const SUPA_KEY = 'SUPABASE_ANON_KEY_HERE'; // eyJhbGci...
+
+// Auto-detect: demo mode if not configured
+const SUPA_READY = !SUPA_URL.includes('HERE') && !SUPA_KEY.includes('HERE');
+let _sb = null;
+if (SUPA_READY) {
+  _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  // Hide demo banner
+  document.getElementById('cfg-banner').style.display = 'none';
+}
+
+// ── SUPABASE AUTH (overrides localStorage auth when configured) ──
+if (SUPA_READY) {
+  // Override doSignup
+  window.doSignup = async function() {
+    const name = document.getElementById('su-name').value.trim();
+    const email = document.getElementById('su-email').value.trim();
+    const pw = document.getElementById('su-pw').value;
+    ['auth-error','auth-success'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+    if (!name || !email || !pw) return authMsg('error', 'Please fill in all fields.');
+    if (pw.length < 6) return authMsg('error', 'Password must be at least 6 characters.');
+    setBtnLoading('btn-signup', true);
+    const { data, error } = await _sb.auth.signUp({ email, password: pw, options: { data: { full_name: name } } });
+    setBtnLoading('btn-signup', false);
+    if (error) return authMsg('error', error.message);
+    if (data.user && !data.session) { authMsg('ok', 'Check your email to confirm your account!'); return; }
+    currentUser = { id: data.user.id, email: data.user.email, name };
+    closeModal('modal-auth'); onLogin(currentUser);
+  };
+
+  // Override doLogin
+  window.doLogin = async function() {
+    const email = document.getElementById('li-email').value.trim();
+    const pw = document.getElementById('li-pw').value;
+    ['auth-error','auth-success'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+    if (!email || !pw) return authMsg('error', 'Please fill in all fields.');
+    setBtnLoading('btn-login', true);
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pw });
+    setBtnLoading('btn-login', false);
+    if (error) return authMsg('error', error.message);
+    currentUser = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || email.split('@')[0] };
+    closeModal('modal-auth'); onLogin(currentUser);
+  };
+
+  // Override doLogout  
+  window.doLogout = async function() {
+    if (!confirm('Log out?')) return;
+    await _sb.auth.signOut();
+    currentUser = null; stopPoll();
+    document.getElementById('nav-user').classList.remove('show');
+    document.getElementById('nav-cta').style.display = '';
+    showPage('home'); showToast('Logged out');
+  };
+
+  // Listen for auth state (handles page refresh, email confirm)
+  _sb.auth.onAuthStateChange((event, session) => {
+    if (session?.user && !currentUser) {
+      currentUser = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email.split('@')[0] };
+      updateNavUser(currentUser);
+    }
+  });
+}
+
+// ── SUPABASE EVENT CRUD ──
+if (SUPA_READY) {
+  // Override doCreateEvent
+  window.doCreateEvent = async function() {
+    const name = document.getElementById('cr-name').value.trim();
+    if (!name) { showMsg('create-error', 'Event name is required.', true); return; }
+    const type = document.getElementById('cr-type').value;
+    const date = document.getElementById('cr-date').value;
+    const loc = document.getElementById('cr-loc').value.trim();
+    setBtnLoading('btn-create', true);
+    const slug = randStr(10);
+    const evData = { slug, name, type, date: date || null, location: loc || null, emoji: {wedding:'💍',birthday:'🎉',party:'🥂',corporate:'🏢',other:'🎊'}[type]||'🎊', owner_id: currentUser.id, tier: 'free' };
+    const { data: ev, error } = await _sb.from('events').insert(evData).select().single();
+    setBtnLoading('btn-create', false);
+    if (error) { showMsg('create-error', error.message, true); return; }
+    closeModal('modal-create');
+    ['cr-name','cr-date','cr-loc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    showToast('🎉 Event created!', 'success');
+    openEvent(ev);
+  };
+
+  // Override loadDashboard
+  window.loadDashboard = async function() {
+    const list = document.getElementById('events-list') || document.getElementById('evgr') || document.getElementById('events-grid');
+    if (!list) return;
+    if (!currentUser) { list.innerHTML = '<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:3rem"><button class="btn-gold" onclick="openModal('modal-auth')">Sign In</button></div>'; return; }
+    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--ink-m)"><div class="spinner" style="border-color:var(--champagne);border-top-color:var(--gold);width:24px;height:24px;border-width:3px;margin:0 auto"></div></div>';
+    const { data: events } = await _sb.from('events').select('*').eq('owner_id', currentUser.id).order('created_at', { ascending: false });
+    if (!events || !events.length) {
+      list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:#fff;border-radius:24px;border:2px dashed var(--border)"><div style="font-size:3rem;margin-bottom:1rem">📸</div><div style="font-family:var(--font-display,serif);font-size:1.4rem;color:var(--ink);margin-bottom:.5rem">No events yet</div><div style="font-size:.88rem;color:var(--ink-m);margin-bottom:1.5rem">Create your first event</div><button class="btn-gold" onclick="openModal('modal-create')" style="background:var(--gold);color:#fff;border:none;padding:.88rem 1.9rem;border-radius:50px;font-size:.94rem;font-weight:500;cursor:pointer">Create First Event →</button></div>';
+      return;
+    }
+    const { data: phs } = await _sb.from('photos').select('event_slug').in('event_slug', events.map(e => e.slug));
+    const cnt = {}; (phs||[]).forEach(p => { cnt[p.event_slug] = (cnt[p.event_slug]||0)+1; });
+    list.innerHTML = events.map(ev => {
+      const n = cnt[ev.slug]||0;
+      const d = ev.date ? new Date(ev.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      return `<div class="event-card-dash ev-card" onclick='openEvent(${JSON.stringify(ev).replace(/"/g,"&quot;")})'  style="background:#fff;border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;transition:.3s;">
+        <div class="event-card-cover ev-cov" style="height:138px;background:linear-gradient(135deg,var(--champagne,#e8dcc8),var(--cream,#faf7f2));display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">
+          ${ev.emoji||'🎊'}
+          ${n>0?`<div style="position:absolute;top:9px;right:9px;background:rgba(15,15,14,.58);color:#fff;border-radius:100px;padding:.2rem .58rem;font-size:.66rem;font-weight:600">📸 ${n}</div>`:''}
+        </div>
+        <div style="padding:1.1rem">
+          <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-m);margin-bottom:.28rem">${ev.type||'EVENT'}</div>
+          <div style="font-family:var(--font-display,serif);font-size:1.1rem;color:var(--ink);margin-bottom:.22rem">${esc(ev.name)}</div>
+          <div style="font-size:.76rem;color:var(--ink-m);margin-bottom:.85rem">${d}${ev.location?' · '+esc(ev.location):''}</div>
+          <div style="display:flex;gap:1.1rem;padding-top:.8rem;border-top:1px solid var(--border)">
+            <div style="font-size:.7rem;color:var(--ink-m)"><strong style="display:block;font-size:.9rem;font-weight:700;color:var(--ink)">${n}</strong>Photos</div>
+            <div style="font-size:.7rem;color:var(--ink-m)"><strong style="display:block;font-size:.9rem;font-weight:700;color:var(--ink)">${ev.tier||'Free'}</strong>Plan</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+}
+
+// ── SUPABASE PHOTO UPLOAD ──
+if (SUPA_READY) {
+  window.uploadFiles = async function(files, isGuest) {
+    const slug = isGuest ? window._guestSlug : currentEvent?.slug;
+    if (!slug) return;
+    const guestName = isGuest ? (document.getElementById('g-guest-name')?.value.trim()||'Guest') : (currentUser?.name||'Host');
+    const progWrap = document.getElementById(isGuest?'g-prog-wrap':'up-prog-wrap');
+    const bar = document.getElementById(isGuest?'g-bar':'up-bar');
+    const status = document.getElementById(isGuest?'g-upload-status':'up-status');
+    if (progWrap) progWrap.classList.add('show');
+    let done = 0;
+    for (const file of files) {
+      if (file.size > 20*1024*1024) { showToast('File too large (max 20MB)', 'error'); continue; }
+      if (status) status.textContent = `Uploading ${file.name}… (${done+1}/${files.length})`;
+      try {
+        let pf = file;
+        if (file.size > 400*1024 && typeof compressImage === 'function') { try { pf = await compressImage(file); } catch(e){} }
+        const path = `${slug}/${Date.now()}_${pf.name.replace(/[^a-z0-9.]/gi,'_').toLowerCase()}`;
+        const { error: se } = await _sb.storage.from('event-photos').upload(path, pf, { cacheControl: '3600' });
+        if (se) throw new Error(se.message);
+        const { data: { publicUrl } } = _sb.storage.from('event-photos').getPublicUrl(path);
+        const { error: de } = await _sb.from('photos').insert({ event_slug: slug, guest_name: guestName, storage_path: path, url: publicUrl, mime_type: pf.type, file_size: pf.size });
+        if (de) throw new Error(de.message);
+        done++; if (bar) bar.style.width = `${done/files.length*100}%`;
+        if (!isGuest) refreshGallery();
+      } catch(e) { showToast('Upload failed: ' + e.message, 'error'); }
+    }
+    if (progWrap) progWrap.classList.remove('show');
+    if (bar) bar.style.width = '0%';
+    if (status) status.textContent = '';
+    if (done) showToast(`✅ ${done} photo${done===1?'':'s'} uploaded!`, 'success');
+  };
+
+  // Real gallery load
+  window.refreshGallery = async function() {
+    if (!currentEvent) return;
+    const { data: photos } = await _sb.from('photos').select('*').eq('event_slug', currentEvent.slug).order('created_at', { ascending: false });
+    if (!photos) return;
+    const guests = [...new Set(photos.map(p=>p.guest_name).filter(Boolean))];
+    const sc1 = document.getElementById('stat-photos') || document.getElementById('sc-photos');
+    const sc2 = document.getElementById('stat-guests') || document.getElementById('sc-guests');
+    if (sc1) sc1.textContent = photos.length;
+    if (sc2) sc2.textContent = guests.length;
+    renderPhotoGrid(photos);
+  };
+
+  // Real guest gallery
+  window.loadGuestPage = async function(slug) {
+    window._guestSlug = slug;
+    const { data: ev } = await _sb.from('events').select('*').eq('slug', slug).single();
+    if (!ev) { document.getElementById('g-name').textContent='Event not found'; return; }
+    document.getElementById('g-ico').textContent = ev.emoji||'🎊';
+    document.getElementById('g-name').textContent = ev.name;
+    const d = ev.date ? new Date(ev.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+    document.getElementById('g-date').textContent = [d,ev.location].filter(Boolean).join(' · ');
+    loadGuestGalleryReal(slug);
+    // Realtime subscription
+    _sb.channel('guest-'+slug).on('postgres_changes',{event:'INSERT',schema:'public',table:'photos',filter:`event_slug=eq.${slug}`},()=>loadGuestGalleryReal(slug)).subscribe();
+  };
+
+  async function loadGuestGalleryReal(slug) {
+    const { data: photos } = await _sb.from('photos').select('*').eq('event_slug', slug).order('created_at',{ascending:false});
+    renderGuestGallery(slug, photos||[]);
+  }
+
+  // Realtime for host gallery
+  let rtCh = null;
+  const origStartPoll = window.startPoll;
+  window.startPoll = function() {
+    if (rtCh) _sb.removeChannel(rtCh);
+    if (!currentEvent) return;
+    rtCh = _sb.channel('ev-'+currentEvent.slug)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'photos',filter:`event_slug=eq.${currentEvent.slug}`},()=>{ showToast('📸 New photo!','success'); refreshGallery(); })
+      .subscribe();
+  };
+  window.stopPoll = function() { if (rtCh) { _sb.removeChannel(rtCh); rtCh=null; } };
+
+  // Delete photo from Supabase
+  window.delPhoto = async function(id) {
+    if (!currentEvent || !confirm('Delete this photo?')) return;
+    await _sb.from('photos').delete().eq('id', id);
+    refreshGallery(); showToast('Photo deleted');
+  };
+
+  // Edit event save
+  window.saveEdit = async function() {
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { const el=document.getElementById('edit-error'); if(el){el.textContent='Event name required.';el.classList.add('show');} return; }
+    currentEvent.name = name;
+    currentEvent.location = document.getElementById('edit-loc').value.trim();
+    currentEvent.date = document.getElementById('edit-date').value;
+    await _sb.from('events').update({ name: currentEvent.name, location: currentEvent.location, date: currentEvent.date||null }).eq('slug', currentEvent.slug);
+    const t=document.getElementById('ev-title')||document.getElementById('ev-t'); if(t) t.textContent=currentEvent.name;
+    closeModal('modal-edit'); showToast('Event updated!','success');
+  };
+
+  // Delete event from Supabase
+  window.deleteEvent = async function() {
+    if (!currentEvent || !confirm(`Delete "${currentEvent.name}"? This cannot be undone.`)) return;
+    await _sb.from('events').delete().eq('slug', currentEvent.slug);
+    closeModal('modal-edit'); currentEvent=null; stopPoll(); showPage('dashboard'); showToast('Event deleted');
+  };
+
+  // Session restore on page load
+  _sb.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      currentUser = { id: session.user.id, email: session.user.email, name: session.user.user_metadata?.full_name || session.user.email.split('@')[0] };
+      updateNavUser(currentUser);
+    }
+  });
+}
+
+// Helper: render guest gallery (used by both demo and real modes)
+window.renderGuestGallery = function(slug, photos) {
+  const gallery = document.getElementById('guest-gallery');
+  if (!gallery) return;
+  gallery.innerHTML = photos.length
+    ? photos.map(p => `<div class="guest-photo" onclick="openLightbox('${p.url.replace(/'/g,"\'")}')"><img src="${p.url}" alt="${esc(p.guest_name||'')}" loading="lazy">${p.guest_name?`<div class="guest-photo-name">${esc(p.guest_name)}</div>`:''}</div>`).join('')
+    : '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--warm-gray,#6b6560);font-size:.85rem">No photos yet — be the first! 📸</div>';
+};
+
+console.log('Lumière:', SUPA_READY ? '✅ Connected to Supabase' : '⚠️ Demo mode (localStorage)');
 
 </script>
 </body>
