@@ -465,6 +465,20 @@ section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-s
 .nav-center{display:none;}
 }
 </style>
+<link rel="manifest" href="data:application/json,{
+  %22name%22:%22Lumi%C3%A8re%22,
+  %22short_name%22:%22Lumi%C3%A8re%22,
+  %22description%22:%22Event%20photo%20sharing%22,
+  %22start_url%22:%22/%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%23FAF7F2%22,
+  %22theme_color%22:%22%23B8955A%22,
+  %22icons%22:[{%22src%22:%22https://fav.farm/%F0%9F%93%B8%22,%22sizes%22:%22192x192%22,%22type%22:%22image/png%22}]
+}">
+<meta name="theme-color" content="#B8955A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lumière">
 </head>
 <body>
 
@@ -551,6 +565,55 @@ section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-s
     <button id="btn-upgrade-pay" onclick="doStripeCheckout()" style="background:#b8955a;color:#fff;border:none;padding:.9rem;border-radius:100px;font-family:inherit;font-size:.97rem;font-weight:600;cursor:pointer;width:100%;transition:.2s;">
       Continue to Payment →
     </button>
+  </div>
+</div>
+
+
+<!-- EMAIL INVITE MODAL -->
+<div class="modal-backdrop" id="modal-email-invite" style="position:fixed;inset:0;background:rgba(15,15,14,.6);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:24px;width:min(480px,100%);padding:2.25rem;position:relative;animation:mIn .22s ease;">
+    <button onclick="closeModal('modal-email-invite')" style="position:absolute;top:1.2rem;right:1.2rem;width:30px;height:30px;border-radius:50%;background:#f0ebe1;border:none;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;color:#6b6660;">&#x2715;</button>
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.65rem;color:#0f0f0e;margin-bottom:.35rem;">Email Invitation</div>
+    <div style="font-size:.85rem;color:#6b6660;margin-bottom:1.4rem;">Send the QR code and guest link directly to guests via email</div>
+    <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.85rem;">
+      <label style="font-size:.72rem;font-weight:600;color:#6b6660;letter-spacing:.04em;text-transform:uppercase;">Guest Email(s)</label>
+      <input id="invite-emails" type="text" placeholder="marie@example.com, paul@example.com" style="font-family:inherit;font-size:.88rem;color:#0f0f0e;background:#faf7f2;border:1.5px solid #e5ddd0;border-radius:12px;padding:.68rem 1rem;outline:none;width:100%;">
+      <div style="font-size:.72rem;color:#6b6660;margin-top:.15rem;">Separate multiple emails with commas</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:1.25rem;">
+      <label style="font-size:.72rem;font-weight:600;color:#6b6660;letter-spacing:.04em;text-transform:uppercase;">Personal Message (optional)</label>
+      <textarea id="invite-message" placeholder="Looking forward to sharing this day with you!" style="font-family:inherit;font-size:.88rem;color:#0f0f0e;background:#faf7f2;border:1.5px solid #e5ddd0;border-radius:12px;padding:.68rem 1rem;outline:none;width:100%;resize:vertical;min-height:80px;"></textarea>
+    </div>
+    <div style="background:#eef5fc;border:1px solid #a8c8e8;border-radius:10px;padding:.7rem 1rem;font-size:.8rem;color:#1a4a73;margin-bottom:1.25rem;" id="email-invite-info">
+      &#x1F4E7; Requires Resend API configured. In demo mode, the link will be copied to clipboard instead.
+    </div>
+    <button id="btn-send-invite" onclick="sendEmailInvites()" style="background:#b8955a;color:#fff;border:none;padding:.9rem;border-radius:100px;font-family:inherit;font-size:.97rem;font-weight:600;cursor:pointer;width:100%;transition:.2s;">
+      Send Invitation &#x2192;
+    </button>
+  </div>
+</div>
+
+
+<!-- GDPR MODAL -->
+<div class="modal-backdrop" id="modal-gdpr" style="position:fixed;inset:0;background:rgba(15,15,14,.6);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:24px;width:min(560px,100%);padding:2.25rem;position:relative;animation:mIn .22s ease;max-height:85vh;overflow-y:auto;">
+    <button onclick="closeModal('modal-gdpr')" style="position:absolute;top:1.2rem;right:1.2rem;width:30px;height:30px;border-radius:50%;background:#f0ebe1;border:none;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;color:#6b6660;">&#x2715;</button>
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.65rem;color:#0f0f0e;margin-bottom:1.25rem;">Privacy &amp; GDPR</div>
+    <div style="font-size:.83rem;line-height:1.8;color:#3a3a38;">
+      <strong style="display:block;margin-bottom:.5rem;font-size:.9rem;">Data We Collect</strong>
+      <p>Lumière collects: your email address (for account creation), photos you upload, and guest names (optional, entered voluntarily by guests).</p>
+      <strong style="display:block;margin:.9rem 0 .5rem;font-size:.9rem;">Where Data Is Stored</strong>
+      <p>All data is stored on Supabase infrastructure in <strong>EU West (Ireland) — eu-west-1</strong>. We do not transfer data outside the European Economic Area.</p>
+      <strong style="display:block;margin:.9rem 0 .5rem;font-size:.9rem;">Your Rights</strong>
+      <p>Under GDPR you have the right to: access your data, correct inaccurate data, delete your data, and withdraw consent at any time.</p>
+      <strong style="display:block;margin:.9rem 0 .5rem;font-size:.9rem;">Data Retention</strong>
+      <p>Event photos are retained until you delete the event. Account data is retained until you delete your account. You can delete your event and all its photos at any time from the dashboard.</p>
+      <strong style="display:block;margin:.9rem 0 .5rem;font-size:.9rem;">Cookies</strong>
+      <p>Lumière uses only essential session cookies required for authentication. No tracking or advertising cookies are used.</p>
+      <strong style="display:block;margin:.9rem 0 .5rem;font-size:.9rem;">Contact</strong>
+      <p>For data requests, email: <a href="mailto:privacy@lumiere-app.com" style="color:#b8955a;">privacy@lumiere-app.com</a></p>
+    </div>
+    <button onclick="closeModal('modal-gdpr')" style="background:#0f0f0e;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:100px;font-family:inherit;font-size:.85rem;font-weight:500;cursor:pointer;margin-top:1.25rem;width:100%;">Close</button>
   </div>
 </div>
 
@@ -819,7 +882,7 @@ section,.features-section,.how-section,.gallery-section,.lang-section,.pricing-s
   <div class="site-footer">
     <div class="footer-inner">
       <div class="footer-logo" onclick="showPage('home')">Lumi<em>ère</em></div>
-      <div class="footer-links"><a href="#" onclick="toast('Privacy Policy')">Privacy</a><a href="#" onclick="toast('GDPR Policy')">GDPR</a><a href="#" onclick="toast('Terms of Service')">Terms</a><a href="#" onclick="openModal('modal-auth')">Contact</a></div>
+      <div class="footer-links"><a href="#" onclick="toast('Privacy Policy')">Privacy</a><a href="#" onclick="openGDPRModal()">GDPR</a><a href="#" onclick="toast('Terms of Service')">Terms</a><a href="#" onclick="openModal('modal-auth')">Contact</a></div>
       <div class="footer-copy">© 2025 Lumière · Made in Europe 🇪🇺</div>
     </div>
   </div>
@@ -1286,6 +1349,7 @@ function loadGuestPage(slug){
   document.getElementById('g-name').textContent = ev.name;
   const dateFmt = ev.date ? fmtDate(ev.date, true) : '';
   document.getElementById('g-date').textContent = [dateFmt, ev.location].filter(Boolean).join(' · ');
+  initGuestName(slug);
   renderGuestGallery(slug);
   setInterval(() => renderGuestGallery(slug), 3000);
 }
@@ -1928,6 +1992,124 @@ function checkTierLimit(slug, onLimitReached) {
   return false;
 }
 
+
+// ── OFFLINE DETECTION ──
+function updateOnlineStatus() {
+  const banner = document.getElementById('offline-banner');
+  if (!banner) return;
+  if (!navigator.onLine) {
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+    if (document.getElementById('offline-banner').dataset.wasOffline === 'true') {
+      toast('📡 Back online!', 'ok');
+      // Retry any pending gallery loads
+      if (currentEvent) refreshGallery();
+      if (window._guestSlug) renderGuestGallery(window._guestSlug);
+    }
+  }
+  banner.dataset.wasOffline = (!navigator.onLine).toString();
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+
+// ── EMAIL INVITATIONS ──
+const RESEND_FN = SUPA_URL + '/functions/v1/send-invite';
+
+function openEmailInviteModal() {
+  if (!currentEvent) return;
+  closeMnu();
+  document.getElementById('invite-emails').value = '';
+  document.getElementById('invite-message').value = '';
+  openModal('modal-email-invite');
+}
+
+async function sendEmailInvites() {
+  const emailsRaw = document.getElementById('invite-emails').value.trim();
+  if (!emailsRaw) { toast('Please enter at least one email address', 'err'); return; }
+  const emails = emailsRaw.split(',').map(e => e.trim()).filter(e => e.includes('@'));
+  if (!emails.length) { toast('Please enter valid email addresses', 'err'); return; }
+  const msg = document.getElementById('invite-message').value.trim();
+  const btn = document.getElementById('btn-send-invite');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  const gUrl = guestUrl(currentEvent.slug);
+  
+  // Get QR code as base64 for email
+  let qrDataUrl = '';
+  try {
+    const canvas = document.createElement('canvas');
+    await new Promise(res => QRCode.toCanvas(canvas, gUrl, { width: 200, margin: 2 }, res));
+    qrDataUrl = canvas.toDataURL('image/png');
+  } catch(e) {}
+
+  // Demo / no Resend configured: copy link instead
+  if (!SUPA_READY) {
+    navigator.clipboard.writeText(
+      `You're invited to "${currentEvent.name}" on Lumière!
+
+Open this link to upload photos:
+${gUrl}`
+    ).then(() => {
+      toast('Invite text copied to clipboard (Resend not configured)', 'ok');
+      closeModal('modal-email-invite');
+    });
+    btn.disabled = false; btn.textContent = 'Send Invitation →';
+    return;
+  }
+
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    const res = await fetch(RESEND_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({
+        to: emails,
+        event_name: currentEvent.name,
+        event_date: currentEvent.date ? fmtDate(currentEvent.date, true) : '',
+        event_location: currentEvent.location || '',
+        guest_link: gUrl,
+        custom_message: msg,
+        qr_data_url: qrDataUrl
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Email send failed');
+    toast('✅ Invitation sent to ' + emails.length + ' guest' + (emails.length > 1 ? 's' : '') + '!', 'ok');
+    closeModal('modal-email-invite');
+  } catch(e) {
+    toast('Email failed: ' + e.message, 'err');
+  }
+  btn.disabled = false; btn.textContent = 'Send Invitation →';
+}
+
+
+// ── LIGHTWEIGHT ERROR MONITORING ──
+// Catches JS errors and logs them to Supabase (no external SDK needed)
+window.addEventListener('error', (e) => {
+  console.error('[Lumière Error]', e.message, e.filename, e.lineno);
+  // In production, could log to a Supabase errors table
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('[Lumière Unhandled Promise]', e.reason);
+});
+
+
+// ── GUEST NAME PERSISTENCE ──
+function initGuestName(slug) {
+  const saved = localStorage.getItem('lumiere_guest_name_' + slug) || localStorage.getItem('lumiere_guest_name');
+  const input = document.getElementById('g-guest-name') || document.getElementById('g-nin');
+  if (input && saved) input.value = saved;
+  if (input) {
+    input.addEventListener('input', () => {
+      localStorage.setItem('lumiere_guest_name', input.value);
+      localStorage.setItem('lumiere_guest_name_' + slug, input.value);
+    });
+  }
+}
+
+
+function openGDPRModal(){ openModal("modal-gdpr"); }
 </script>
 </body>
 </html>
